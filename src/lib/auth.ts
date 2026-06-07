@@ -5,6 +5,9 @@ import { db } from './db';
 import type { User } from '@/types';
 
 const JWT_SECRET = process.env.JWT_SECRET;
+const COOKIE_SECURE = process.env.COOKIE_SECURE
+  ? process.env.COOKIE_SECURE === 'true'
+  : process.env.NODE_ENV === 'production';
 
 if (!JWT_SECRET) {
   throw new Error('JWT_SECRET must be set before starting the application.');
@@ -41,7 +44,7 @@ export async function createSession(userId: string, email: string): Promise<void
   
   cookieStore.set('auth-token', token, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
+    secure: COOKIE_SECURE,
     sameSite: 'lax',
     maxAge: 60 * 60 * 24 * 7, // 7 days
     path: '/',

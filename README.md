@@ -25,6 +25,7 @@ Skopiuj `.env.example` do `.env` i ustaw wlasny `JWT_SECRET`.
 DATABASE_URL="file:./db/custom.db"
 JWT_SECRET="dlugi-losowy-sekret"
 NODE_ENV="production"
+COOKIE_SECURE="true"
 ```
 
 Nie commituj pliku `.env` ani bazy danych.

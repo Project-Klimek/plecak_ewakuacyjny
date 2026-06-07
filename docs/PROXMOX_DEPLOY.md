@@ -26,6 +26,19 @@ npm run pm2:start
 pm2 save
 ```
 
+Dla lokalnego dostepu po zwyklym HTTP, np. `http://192.168.100.106:3000`, ustaw w `.env`:
+
+```env
+COOKIE_SECURE="false"
+DATABASE_URL="file:/home/admin/plecak-ewakuacyjny/db/custom.db"
+```
+
+Dla HTTPS zostaw:
+
+```env
+COOKIE_SECURE="true"
+```
+
 ## Aktualizacja istniejacej instalacji
 
 Jezeli aplikacja juz istnieje w `/home/admin/plecak-ewakuacyjny`, najprosciej uzyc skryptu:
