@@ -1,0 +1,97 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String          @id @default(cuid())
+  email         String          @unique
+  password      String
+  name          String?
+  avatar        String?
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  
+  // Relacje
+  backpacks     Backpack[]
+  sharedWithMe  SharedBackpack[]
+  notifications Notification[]
+}
+
+model Backpack {
+  id          String          @id @default(cuid())
+  name        String
+  description String?
+  color       String          @default("#3b82f6")
+  icon        String          @default("backpack")
+  userId      String
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  
+  // Relacje
+  user        User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items       Item[]
+  sharedWith  SharedBackpack[]
+  
+  @@index([userId])
+}
+
+model Item {
+  id           String    @id @default(cuid())
+  name         String
+  quantity     Int       @default(1)
+  category     String    @default("other")
+  expiryDate   DateTime?
+  barcode      String?
+  notes        String?
+  imageUrl     String?
+  backpackId   String
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  
+  // Relacje
+  backpack     Backpack  @relation(fields: [backpackId], references: [id], onDelete: Cascade)
+  
+  @@index([backpackId])
+  @@index([expiryDate])
+}
+
+model SharedBackpack {
+  id         String   @id @default(cuid())
+  backpackId String
+  userId     String
+  permission String   @default("read") // read lub edit
+  createdAt  DateTime @default(now())
+  
+  // Relacje
+  backpack   Backpack @relation(fields: [backpackId], references: [id], onDelete: Cascade)
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@unique([backpackId, userId])
+  @@index([backpackId])
+  @@index([userId])
+}
+
+model Notification {
+  id          String   @id @default(cuid())
+  userId      String
+  type        String   // expiry_warning, share_received
+  title       String
+  message     String
+  itemId      String?
+  isRead      Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  
+  // Relacje
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([userId])
+  @@index([isRead])
+}

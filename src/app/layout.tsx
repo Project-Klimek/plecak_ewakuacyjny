@@ -1,0 +1,54 @@
+import type { Metadata } from "next";
+import { Geist, Geist_Mono } from "next/font/google";
+import "./globals.css";
+import { Toaster } from "@/components/ui/toaster";
+
+const geistSans = Geist({
+  variable: "--font-geist-sans",
+  subsets: ["latin"],
+});
+
+const geistMono = Geist_Mono({
+  variable: "--font-geist-mono",
+  subsets: ["latin"],
+});
+
+export const metadata: Metadata = {
+  title: "Plecak Ewakuacyjny",
+  description: "Aplikacja do zarządzania plecakami ewakuacyjnymi z obsługą offline",
+  keywords: ["ewakuacja", "plecak", "survival", "PWA", "offline"],
+  authors: [{ name: "Plecak Ewakuacyjny Team" }],
+  icons: {
+    icon: "/icons/icon-512.png",
+  },
+  manifest: "/manifest.json",
+  themeColor: "#f97316",
+  viewport: "width=device-width, initial-scale=1, maximum-scale=1",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "Plecak Ewakuacyjny",
+  },
+};
+
+export default function RootLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
+  return (
+    <html lang="pl" suppressHydrationWarning>
+      <head>
+        <link rel="manifest" href="/manifest.json" />
+        <meta name="theme-color" content="#f97316" />
+        <link rel="apple-touch-icon" href="/icons/icon-512.png" />
+      </head>
+      <body
+        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-background text-foreground`}
+      >
+        {children}
+        <Toaster />
+      </body>
+    </html>
+  );
+}

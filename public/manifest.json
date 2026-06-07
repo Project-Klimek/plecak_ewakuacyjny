@@ -1,0 +1,22 @@
+{
+  "name": "Plecak Ewakuacyjny",
+  "short_name": "Plecak",
+  "description": "Aplikacja do zarządzania plecakami ewakuacyjnymi z obsługą offline",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#f97316",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["utilities", "lifestyle"],
+  "lang": "pl-PL",
+  "scope": "/",
+  "prefer_related_applications": false
+}
