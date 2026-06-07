@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
@@ -20,15 +20,21 @@ export const metadata: Metadata = {
   authors: [{ name: "Plecak Ewakuacyjny Team" }],
   icons: {
     icon: "/icons/icon-512.png",
+    apple: "/icons/icon-512.png",
   },
   manifest: "/manifest.json",
-  themeColor: "#f97316",
-  viewport: "width=device-width, initial-scale=1, maximum-scale=1",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
     title: "Plecak Ewakuacyjny",
   },
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  themeColor: "#f97316",
 };
 
 export default function RootLayout({
@@ -38,11 +44,6 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="pl" suppressHydrationWarning>
-      <head>
-        <link rel="manifest" href="/manifest.json" />
-        <meta name="theme-color" content="#f97316" />
-        <link rel="apple-touch-icon" href="/icons/icon-512.png" />
-      </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-background text-foreground`}
       >
