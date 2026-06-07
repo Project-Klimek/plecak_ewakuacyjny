@@ -3,6 +3,37 @@ import { db } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth';
 import type { SyncData } from '@/types';
 
+function pickBackpackUpdateData(data: Record<string, unknown>) {
+  return {
+    ...(typeof data.name === 'string' && { name: data.name }),
+    ...(typeof data.description === 'string' || data.description === null
+      ? { description: data.description as string | null }
+      : {}),
+    ...(typeof data.color === 'string' && { color: data.color }),
+    ...(typeof data.icon === 'string' && { icon: data.icon }),
+  };
+}
+
+function pickItemUpdateData(data: Record<string, unknown>) {
+  return {
+    ...(typeof data.name === 'string' && { name: data.name }),
+    ...(typeof data.quantity === 'number' && { quantity: data.quantity }),
+    ...(typeof data.category === 'string' && { category: data.category }),
+    ...(data.expiryDate !== undefined
+      ? { expiryDate: data.expiryDate ? new Date(String(data.expiryDate)) : null }
+      : {}),
+    ...(typeof data.barcode === 'string' || data.barcode === null
+      ? { barcode: data.barcode as string | null }
+      : {}),
+    ...(typeof data.notes === 'string' || data.notes === null
+      ? { notes: data.notes as string | null }
+      : {}),
+    ...(typeof data.imageUrl === 'string' || data.imageUrl === null
+      ? { imageUrl: data.imageUrl as string | null }
+      : {}),
+  };
+}
+
 // GET - Pobierz dane do synchronizacji
 export async function GET() {
   const user = await getCurrentUser();
@@ -101,7 +132,7 @@ export async function POST(request: NextRequest) {
             if (backpack && backpack.userId === user.id) {
               await db.backpack.update({
                 where: { id: change.data.id },
-                data: change.data,
+                data: pickBackpackUpdateData(change.data),
               });
               results.updated++;
             }
@@ -161,10 +192,7 @@ export async function POST(request: NextRequest) {
             if (item && item.backpack.userId === user.id) {
               await db.item.update({
                 where: { id: change.data.id },
-                data: {
-                  ...change.data,
-                  expiryDate: change.data.expiryDate ? new Date(change.data.expiryDate) : null,
-                },
+                data: pickItemUpdateData(change.data),
               });
               results.updated++;
             }

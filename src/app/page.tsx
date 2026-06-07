@@ -2,10 +2,24 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { useAppStore } from '@/store';
-import { authApi, backpacksApi, itemsApi, scanApi, exportApi, notificationsApi } from '@/lib/api';
+import { authApi, backpacksApi, itemsApi, scanApi, exportApi, notificationsApi, syncApi } from '@/lib/api';
 import type { Backpack, Item, ItemCategory } from '@/types';
 import { ITEM_CATEGORIES } from '@/types';
-import { saveBackpackLocal, saveItemLocal, getBackpacksLocal, getItemsLocal, deleteBackpackLocal, deleteItemLocal, generateId, saveAllDataLocal } from '@/lib/offline';
+import {
+  saveBackpackLocal,
+  saveItemLocal,
+  getBackpacksLocal,
+  getItemsLocal,
+  deleteBackpackLocal,
+  deleteItemLocal,
+  generateId,
+  saveAllDataLocal,
+  addPendingChange,
+  getPendingChanges,
+  clearPendingChanges,
+  setLastSync,
+  registerBackgroundSync,
+} from '@/lib/offline';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -129,6 +143,41 @@ export default function Page() {
     ? backpackItems.filter(i => i.category === selectedCategory)
     : [];
 
+  const queueOfflineChange = async (type: string, data: Record<string, unknown>) => {
+    await addPendingChange(type, data);
+    try {
+      await registerBackgroundSync();
+    } catch {
+      // Browser background sync is optional; queued changes still sync on reconnect.
+    }
+  };
+
+  const syncPendingChanges = useCallback(async () => {
+    const pendingChanges = await getPendingChanges();
+    if (pendingChanges.length === 0) return true;
+
+    try {
+      const response = await syncApi.sync(pendingChanges);
+      const syncResult = response.data as { errors?: string[] } | undefined;
+
+      if (response.success && (!syncResult?.errors || syncResult.errors.length === 0)) {
+        await clearPendingChanges();
+        await setLastSync(new Date());
+        toast({ title: 'Synchronizacja', description: 'Zmiany offline zostaly wyslane' });
+        return true;
+      }
+
+      toast({
+        title: 'Synchronizacja',
+        description: 'Nie wszystkie zmiany offline zostaly wyslane',
+        variant: 'destructive',
+      });
+      return false;
+    } catch {
+      return false;
+    }
+  }, []);
+
   useEffect(() => {
     const init = async () => {
       try {
@@ -147,7 +196,8 @@ export default function Page() {
         const response = await authApi.me();
         if (response.success && response.user) {
           setUser(response.user);
-          await loadData();
+          const synced = await syncPendingChanges();
+          if (synced) await loadData();
         }
       } catch {
         console.log('Working offline or not logged in');
@@ -159,9 +209,10 @@ export default function Page() {
     
     init();
     
-    const handleOnline = () => {
+    const handleOnline = async () => {
       setIsOffline(false);
-      loadData();
+      const synced = await syncPendingChanges();
+      if (synced) loadData();
     };
     const handleOffline = () => setIsOffline(true);
     
@@ -181,7 +232,7 @@ export default function Page() {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
     };
-  }, []);
+  }, [syncPendingChanges]);
 
   const loadData = async () => {
     try {
@@ -284,6 +335,7 @@ export default function Page() {
     } catch {
       addBackpack(localBackpack);
       await saveBackpackLocal(localBackpack);
+      await queueOfflineChange('create_backpack', localBackpack as unknown as Record<string, unknown>);
       setShowAddBackpack(false);
       setNewBackpack({ name: '', description: '', color: '#f97316' });
       toast({ title: 'Sukces', description: 'Plecak utworzony lokalnie (offline)' });
@@ -294,7 +346,7 @@ export default function Page() {
     try {
       await backpacksApi.delete(id);
     } catch {
-      // Offline
+      await queueOfflineChange('delete_backpack', { id });
     }
     removeBackpack(id);
     await deleteBackpackLocal(id);
@@ -333,6 +385,7 @@ export default function Page() {
     } catch {
       addItem(localItem);
       await saveItemLocal(localItem);
+      await queueOfflineChange('create_item', localItem as unknown as Record<string, unknown>);
     }
     
     setShowAddItem(false);
@@ -355,7 +408,7 @@ export default function Page() {
     try {
       await itemsApi.update(item.id, { quantity: newQuantity });
     } catch {
-      // Offline
+      await queueOfflineChange('update_item', { id: item.id, quantity: newQuantity });
     }
   };
 
@@ -363,7 +416,7 @@ export default function Page() {
     try {
       await itemsApi.delete(id);
     } catch {
-      // Offline
+      await queueOfflineChange('delete_item', { id });
     }
     removeItem(id);
     await deleteItemLocal(id);

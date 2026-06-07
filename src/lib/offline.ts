@@ -147,12 +147,14 @@ export async function saveAllDataLocal(backpacks: Backpack[], items: Item[]): Pr
   const db = await getDB();
   
   const backpackTx = db.transaction('backpacks', 'readwrite');
+  await backpackTx.store.clear();
   for (const backpack of backpacks) {
     await backpackTx.store.put(backpack);
   }
   await backpackTx.done;
   
   const itemTx = db.transaction('items', 'readwrite');
+  await itemTx.store.clear();
   for (const item of items) {
     await itemTx.store.put(item);
   }
