@@ -61,3 +61,5 @@ npm run pm2:logs
 ```
 
 Po starcie produkcyjnym strona nie powinna ladowac plikow `dev_hmr-client` ani `next-devtools`.
+
+Szczegolowy opis i skrypt pierwszego wdrozenia sa w `docs/PROXMOX_DEPLOY.md`.
