@@ -167,6 +167,7 @@ export default function Page() {
     acc[item.category].push(item);
     return acc;
   }, {} as Record<ItemCategory, ShoppingItem[]>);
+  const totalIssueCount = expiringItems.length + expiredItems.length;
 
   const categoryItems = selectedCategory 
     ? backpackItems.filter(i => i.category === selectedCategory)
@@ -867,8 +868,8 @@ export default function Page() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-100 dark:bg-gray-900">
-      <header className="sticky top-0 z-40 bg-white dark:bg-gray-800 shadow-sm">
+    <div className="min-h-screen bg-neutral-100 text-neutral-950 dark:bg-neutral-950 dark:text-neutral-50">
+      <header className="sticky top-0 z-40 border-b border-neutral-200 bg-white/95 backdrop-blur dark:border-neutral-800 dark:bg-neutral-950/95">
         <div className="flex items-center justify-between px-4 py-3">
           <div className="flex items-center">
             {view !== 'backpacks' && (
@@ -876,7 +877,7 @@ export default function Page() {
                 <ChevronRight className="h-6 w-6 rotate-180" />
               </Button>
             )}
-            <h1 className="text-lg font-bold truncate">
+            <h1 className="text-lg font-semibold tracking-normal truncate">
               {view === 'backpacks' && 'Moje plecaki'}
               {view === 'categories' && selectedBackpack?.name}
               {view === 'items' && `${selectedBackpack?.name} - ${ITEM_CATEGORIES.find(c => c.value === selectedCategory)?.label}`}
@@ -887,7 +888,7 @@ export default function Page() {
           </div>
           <div className="flex items-center gap-2">
             {isOffline && (
-              <Badge variant="outline" className="text-amber-600 border-amber-600 text-xs">
+              <Badge variant="outline" className="border-amber-500/40 bg-amber-50 text-amber-700 text-xs dark:bg-amber-950/30 dark:text-amber-200">
                 Offline
               </Badge>
             )}
@@ -939,49 +940,80 @@ export default function Page() {
         )}
       </header>
 
-      <main className="px-4 py-4 pb-24">
+      <main className="px-4 py-4 pb-28">
         {view === 'backpacks' && (
           <div className="space-y-4">
+            <Card className="rounded-lg border-neutral-200 bg-white shadow-sm dark:border-neutral-800 dark:bg-neutral-900">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-sm text-neutral-500 dark:text-neutral-400">Status operacyjny</p>
+                    <p className="text-xl font-semibold">
+                      {totalIssueCount > 0 ? `${totalIssueCount} spraw do kontroli` : 'Wszystko pod kontrola'}
+                    </p>
+                  </div>
+                  <Badge
+                    variant="outline"
+                    className={totalIssueCount > 0
+                      ? 'border-amber-300 bg-amber-50 text-amber-700 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-200'
+                      : 'border-emerald-300 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-200'
+                    }
+                  >
+                    {totalIssueCount > 0 ? 'Uwaga' : 'Gotowe'}
+                  </Badge>
+                </div>
+              </CardContent>
+            </Card>
+
             <div className="grid grid-cols-3 gap-3">
               <Card
-                className="rounded-2xl cursor-pointer active:scale-[0.98] transition-transform"
+                className="rounded-lg border-amber-200 bg-white shadow-sm cursor-pointer active:scale-[0.98] transition-transform dark:border-amber-900/60 dark:bg-neutral-900"
                 onClick={() => setView('expiring')}
               >
-                <CardContent className="p-4 text-center">
-                  <p className="text-2xl font-bold text-amber-500">{expiringItems.length}</p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">Konczy sie</p>
+                <CardContent className="p-3">
+                  <div className="mb-3 flex h-8 w-8 items-center justify-center rounded-md bg-amber-100 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300">
+                    <AlertTriangle className="h-4 w-4" />
+                  </div>
+                  <p className="text-2xl font-semibold text-neutral-950 dark:text-neutral-50">{expiringItems.length}</p>
+                  <p className="text-xs text-neutral-500 dark:text-neutral-400">Konczy sie</p>
                 </CardContent>
               </Card>
               <Card
-                className="rounded-2xl cursor-pointer active:scale-[0.98] transition-transform"
+                className="rounded-lg border-red-200 bg-white shadow-sm cursor-pointer active:scale-[0.98] transition-transform dark:border-red-900/60 dark:bg-neutral-900"
                 onClick={() => setView('expired')}
               >
-                <CardContent className="p-4 text-center">
-                  <p className="text-2xl font-bold text-red-500">{expiredItems.length}</p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">Po terminie</p>
+                <CardContent className="p-3">
+                  <div className="mb-3 flex h-8 w-8 items-center justify-center rounded-md bg-red-100 text-red-700 dark:bg-red-950/60 dark:text-red-300">
+                    <Trash2 className="h-4 w-4" />
+                  </div>
+                  <p className="text-2xl font-semibold text-neutral-950 dark:text-neutral-50">{expiredItems.length}</p>
+                  <p className="text-xs text-neutral-500 dark:text-neutral-400">Po terminie</p>
                 </CardContent>
               </Card>
               <Card
-                className="rounded-2xl cursor-pointer active:scale-[0.98] transition-transform"
+                className="rounded-lg border-emerald-200 bg-white shadow-sm cursor-pointer active:scale-[0.98] transition-transform dark:border-emerald-900/60 dark:bg-neutral-900"
                 onClick={() => setView('shopping')}
               >
-                <CardContent className="p-4 text-center">
-                  <p className="text-2xl font-bold text-green-600">{activeShoppingCount}</p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">Do kupienia</p>
+                <CardContent className="p-3">
+                  <div className="mb-3 flex h-8 w-8 items-center justify-center rounded-md bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300">
+                    <ShoppingCart className="h-4 w-4" />
+                  </div>
+                  <p className="text-2xl font-semibold text-neutral-950 dark:text-neutral-50">{activeShoppingCount}</p>
+                  <p className="text-xs text-neutral-500 dark:text-neutral-400">Do kupienia</p>
                 </CardContent>
               </Card>
             </div>
 
-            <Button 
-              className="w-full h-14 rounded-2xl bg-orange-500 hover:bg-orange-600 text-lg"
+            <Button
+              className="w-full h-12 rounded-lg bg-neutral-950 text-base hover:bg-neutral-800 dark:bg-orange-500 dark:hover:bg-orange-600"
               onClick={() => setShowAddBackpack(true)}
             >
-              <Plus className="h-6 w-6 mr-2" />
+              <Plus className="h-5 w-5 mr-2" />
               Nowy plecak
             </Button>
 
             {backpacks.length === 0 ? (
-              <Card className="rounded-2xl p-8 text-center">
+              <Card className="rounded-lg border-dashed p-8 text-center shadow-sm">
                 <Backpack className="h-16 w-16 mx-auto text-gray-300 mb-4" />
                 <p className="text-gray-500">Nie masz jeszcze plecakow</p>
                 <p className="text-sm text-gray-400 mt-1">Kliknij Nowy plecak aby dodac</p>
@@ -990,62 +1022,80 @@ export default function Page() {
               <div className="grid grid-cols-2 gap-3">
                 {backpacks.map((backpack) => {
                   const itemCount = items.filter(i => i.backpackId === backpack.id).length;
+                  const backpackExpiredCount = expiredItems.filter(i => i.backpackId === backpack.id).length;
+                  const backpackExpiringCount = expiringItems.filter(i => i.backpackId === backpack.id).length;
+                  const backpackIssueCount = backpackExpiredCount + backpackExpiringCount;
                   const isDeleting = deleteConfirm === backpack.id;
                   
                   return (
-                    <Card 
-                      key={backpack.id} 
-                      className="rounded-2xl overflow-hidden active:scale-[0.98] transition-transform cursor-pointer"
+                    <Card
+                      key={backpack.id}
+                      className="relative overflow-hidden rounded-lg border-neutral-200 bg-white shadow-sm active:scale-[0.98] transition-transform cursor-pointer dark:border-neutral-800 dark:bg-neutral-900"
                       onClick={() => !isDeleting && navigateToItems(backpack.id)}
                     >
-                      <div 
-                        className="h-20 flex items-center justify-center relative"
-                        style={{ backgroundColor: backpack.color }}
-                      >
-                        <Backpack className="h-10 w-10 text-white/90" />
-                        
-                        {isDeleting ? (
-                          <div className="absolute top-2 right-2 flex gap-1">
-                            <Button
-                              size="sm"
-                              variant="secondary"
-                              className="h-7 w-7 p-0 bg-white/90"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleDeleteBackpack(backpack.id);
-                              }}
-                            >
-                              <Check className="h-4 w-4 text-green-600" />
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="secondary"
-                              className="h-7 w-7 p-0 bg-white/90"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setDeleteConfirm(null);
-                              }}
-                            >
-                              <X className="h-4 w-4 text-red-600" />
-                            </Button>
+                      <div className="absolute inset-y-0 left-0 w-1.5" style={{ backgroundColor: backpack.color }} />
+                      <CardContent className="p-3 pl-4">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="min-w-0">
+                            <div className="mb-3 flex h-9 w-9 items-center justify-center rounded-md bg-neutral-100 dark:bg-neutral-800">
+                              <Backpack className="h-5 w-5" style={{ color: backpack.color }} />
+                            </div>
+                            <p className="font-semibold text-base truncate">{backpack.name}</p>
+                            <p className="text-sm text-neutral-500 dark:text-neutral-400">{itemCount} przedmiotow</p>
                           </div>
-                        ) : (
-                          <Button
-                            size="sm"
-                            variant="secondary"
-                            className="absolute top-2 right-2 h-7 w-7 p-0 bg-white/20 hover:bg-white/40 border-0"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setDeleteConfirm(backpack.id);
-                            }}
+                          {isDeleting ? (
+                            <div className="flex gap-1">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="h-7 w-7 p-0"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDeleteBackpack(backpack.id);
+                                }}
+                              >
+                                <Check className="h-4 w-4 text-green-600" />
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="h-7 w-7 p-0"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setDeleteConfirm(null);
+                                }}
+                              >
+                                <X className="h-4 w-4 text-red-600" />
+                              </Button>
+                            </div>
+                          ) : (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-8 w-8 shrink-0 p-0 text-neutral-400 hover:text-red-500"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setDeleteConfirm(backpack.id);
+                              }}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </div>
+                        <div className="mt-4 flex items-center justify-between">
+                          <Badge
+                            variant="outline"
+                            className={backpackIssueCount > 0
+                              ? 'border-amber-300 bg-amber-50 text-amber-700 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-200'
+                              : 'border-emerald-300 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-200'
+                            }
                           >
-                            <Trash2 className="h-4 w-4 text-white" />
-                          </Button>
-                        )}
-                      </div>
-                      <CardContent className="p-3">
-                        <p className="font-semibold text-base truncate">{backpack.name}</p>
-                        <p className="text-sm text-gray-500">{itemCount} przedmiotow</p>
+                            {backpackIssueCount > 0 ? `${backpackIssueCount} uwaga` : 'OK'}
+                          </Badge>
+                          <div className="flex h-8 w-8 items-center justify-center text-neutral-400">
+                            <ChevronRight className="h-4 w-4" />
+                          </div>
+                        </div>
                       </CardContent>
                     </Card>
                   );
@@ -1361,53 +1411,53 @@ export default function Page() {
         )}
       </main>
 
-      <nav className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 z-50">
-        <div className="grid grid-cols-5 h-16">
+      <nav className="fixed bottom-3 left-3 right-3 z-50 rounded-lg border border-neutral-200 bg-white/95 p-1 shadow-lg backdrop-blur dark:border-neutral-800 dark:bg-neutral-900/95">
+        <div className="grid grid-cols-5 h-14 gap-1">
           <button
-            className={`flex flex-col items-center justify-center ${view === 'backpacks' ? 'text-orange-500' : 'text-gray-500'}`}
+            className={`flex flex-col items-center justify-center rounded-md ${view === 'backpacks' ? 'bg-neutral-100 text-neutral-950 dark:bg-neutral-800 dark:text-white' : 'text-neutral-500'}`}
             onClick={() => { setView('backpacks'); setSelectedBackpackId(null); }}
           >
             <Backpack className="h-5 w-5" />
             <span className="text-xs mt-1">Plecaki</span>
           </button>
           <button
-            className={`flex flex-col items-center justify-center relative ${view === 'shopping' ? 'text-green-600' : 'text-gray-500'}`}
+            className={`flex flex-col items-center justify-center rounded-md relative ${view === 'shopping' ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300' : 'text-neutral-500'}`}
             onClick={() => setView('shopping')}
           >
             <ShoppingCart className="h-5 w-5" />
             {activeShoppingCount > 0 && (
-              <span className="absolute top-1 right-1/4 min-w-4 h-4 px-1 bg-green-500 text-white text-[10px] rounded-full flex items-center justify-center">
+              <span className="absolute top-0 right-1/4 min-w-4 h-4 px-1 bg-emerald-500 text-white text-[10px] rounded-full flex items-center justify-center">
                 {activeShoppingCount}
               </span>
             )}
             <span className="text-xs mt-1">Zakupy</span>
           </button>
           <button
-            className={`flex flex-col items-center justify-center relative ${view === 'expiring' ? 'text-orange-500' : 'text-gray-500'}`}
+            className={`flex flex-col items-center justify-center rounded-md relative ${view === 'expiring' ? 'bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300' : 'text-neutral-500'}`}
             onClick={() => setView('expiring')}
           >
             <AlertTriangle className="h-5 w-5" />
             {expiringItems.length > 0 && (
-              <span className="absolute top-1 right-1/4 min-w-4 h-4 px-1 bg-amber-500 text-white text-[10px] rounded-full flex items-center justify-center">
+              <span className="absolute top-0 right-1/4 min-w-4 h-4 px-1 bg-amber-500 text-white text-[10px] rounded-full flex items-center justify-center">
                 {expiringItems.length}
               </span>
             )}
             <span className="text-[10px] mt-1">Koncza</span>
           </button>
           <button
-            className={`flex flex-col items-center justify-center relative ${view === 'expired' ? 'text-orange-500' : 'text-gray-500'}`}
+            className={`flex flex-col items-center justify-center rounded-md relative ${view === 'expired' ? 'bg-red-50 text-red-700 dark:bg-red-950/40 dark:text-red-300' : 'text-neutral-500'}`}
             onClick={() => setView('expired')}
           >
             <Trash2 className="h-5 w-5" />
             {expiredItems.length > 0 && (
-              <span className="absolute top-1 right-1/4 min-w-4 h-4 px-1 bg-red-500 text-white text-[10px] rounded-full flex items-center justify-center">
+              <span className="absolute top-0 right-1/4 min-w-4 h-4 px-1 bg-red-500 text-white text-[10px] rounded-full flex items-center justify-center">
                 {expiredItems.length}
               </span>
             )}
             <span className="text-[10px] mt-1">Po terminie</span>
           </button>
           <button
-            className="flex flex-col items-center justify-center text-gray-500"
+            className="flex flex-col items-center justify-center rounded-md text-neutral-500"
             onClick={handleLogout}
           >
             <LogOut className="h-5 w-5" />
