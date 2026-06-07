@@ -31,6 +31,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { toast } from '@/hooks/use-toast';
 import { Toaster } from '@/components/ui/toaster';
 
@@ -38,7 +46,7 @@ import {
   Backpack, Plus, Trash2, LogOut,
   Utensils, Droplet, Heart, Wrench, FileText, Shirt, Smartphone, Package,
   Camera, Download, Moon, Sun, RefreshCw, 
-  ChevronRight, AlertTriangle, X, Check, Search, Minus, ShoppingCart
+  ChevronRight, AlertTriangle, X, Check, Search, Minus, ShoppingCart, Menu
 } from 'lucide-react';
 
 const categoryIcons: Record<ItemCategory, React.ReactNode> = {
@@ -898,6 +906,31 @@ export default function Page() {
             <Button variant="ghost" size="icon" onClick={toggleDarkMode}>
               {isDarkMode ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
             </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" aria-label="Menu akcji">
+                  <Menu className="h-5 w-5" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56 rounded-lg">
+                <DropdownMenuLabel>Akcje</DropdownMenuLabel>
+                <DropdownMenuItem onSelect={() => setShowAddBackpack(true)}>
+                  <Plus className="h-4 w-4" />
+                  Nowy plecak
+                </DropdownMenuItem>
+                {!isOffline && pendingSyncCount > 0 && (
+                  <DropdownMenuItem onSelect={handleManualSync} disabled={isSyncing}>
+                    <RefreshCw className={`h-4 w-4 ${isSyncing ? 'animate-spin' : ''}`} />
+                    Synchronizuj
+                  </DropdownMenuItem>
+                )}
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onSelect={handleLogout} variant="destructive">
+                  <LogOut className="h-4 w-4" />
+                  Wyloguj
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
         
@@ -1004,19 +1037,11 @@ export default function Page() {
               </Card>
             </div>
 
-            <Button
-              className="w-full h-12 rounded-lg bg-neutral-950 text-base hover:bg-neutral-800 dark:bg-orange-500 dark:hover:bg-orange-600"
-              onClick={() => setShowAddBackpack(true)}
-            >
-              <Plus className="h-5 w-5 mr-2" />
-              Nowy plecak
-            </Button>
-
             {backpacks.length === 0 ? (
               <Card className="rounded-lg border-dashed p-8 text-center shadow-sm">
                 <Backpack className="h-16 w-16 mx-auto text-gray-300 mb-4" />
                 <p className="text-gray-500">Nie masz jeszcze plecakow</p>
-                <p className="text-sm text-gray-400 mt-1">Kliknij Nowy plecak aby dodac</p>
+                <p className="text-sm text-gray-400 mt-1">Otworz menu akcji i dodaj pierwszy plecak</p>
               </Card>
             ) : (
               <div className="grid grid-cols-2 gap-3">
@@ -1412,7 +1437,7 @@ export default function Page() {
       </main>
 
       <nav className="fixed bottom-3 left-3 right-3 z-50 rounded-lg border border-neutral-200 bg-white/95 p-1 shadow-lg backdrop-blur dark:border-neutral-800 dark:bg-neutral-900/95">
-        <div className="grid grid-cols-5 h-14 gap-1">
+        <div className="grid grid-cols-4 h-14 gap-1">
           <button
             className={`flex flex-col items-center justify-center rounded-md ${view === 'backpacks' ? 'bg-neutral-100 text-neutral-950 dark:bg-neutral-800 dark:text-white' : 'text-neutral-500'}`}
             onClick={() => { setView('backpacks'); setSelectedBackpackId(null); }}
@@ -1455,13 +1480,6 @@ export default function Page() {
               </span>
             )}
             <span className="text-[10px] mt-1">Po terminie</span>
-          </button>
-          <button
-            className="flex flex-col items-center justify-center rounded-md text-neutral-500"
-            onClick={handleLogout}
-          >
-            <LogOut className="h-5 w-5" />
-            <span className="text-xs mt-1">Wyloguj</span>
           </button>
         </div>
       </nav>
