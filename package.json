@@ -1,11 +1,14 @@
 {
-  "name": "nextjs_tailwind_shadcn_ts",
+  "name": "plecak-ewakuacyjny",
   "version": "0.2.0",
   "private": true,
   "scripts": {
     "dev": "next dev -p 3000 2>&1 | tee dev.log",
     "build": "next build && cp -r .next/static .next/standalone/.next/ && cp -r public .next/standalone/",
-    "start": "NODE_ENV=production bun .next/standalone/server.js 2>&1 | tee server.log",
+    "start": "node .next/standalone/server.js",
+    "pm2:start": "pm2 start ecosystem.config.cjs",
+    "pm2:restart": "pm2 restart plecak-ewakuacyjny",
+    "pm2:logs": "pm2 logs plecak-ewakuacyjny",
     "lint": "eslint .",
     "db:push": "prisma db push",
     "db:generate": "prisma generate",
