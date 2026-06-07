@@ -152,6 +152,8 @@ export default function Page() {
     }
   };
 
+  const isBrowserOnline = () => typeof navigator === 'undefined' || navigator.onLine;
+
   const syncPendingChanges = useCallback(async () => {
     const pendingChanges = await getPendingChanges();
     if (pendingChanges.length === 0) return true;
@@ -322,6 +324,20 @@ export default function Page() {
       createdAt: new Date(),
       updatedAt: new Date(),
     };
+
+    const finishLocalBackpackCreate = async () => {
+      addBackpack(localBackpack);
+      await saveBackpackLocal(localBackpack);
+      await queueOfflineChange('create_backpack', localBackpack as unknown as Record<string, unknown>);
+      setShowAddBackpack(false);
+      setNewBackpack({ name: '', description: '', color: '#f97316' });
+      toast({ title: 'Sukces', description: 'Plecak utworzony lokalnie (offline)' });
+    };
+
+    if (!isBrowserOnline()) {
+      await finishLocalBackpackCreate();
+      return;
+    }
     
     try {
       const response = await backpacksApi.create(newBackpack);
@@ -331,22 +347,26 @@ export default function Page() {
         setShowAddBackpack(false);
         setNewBackpack({ name: '', description: '', color: '#f97316' });
         toast({ title: 'Sukces', description: 'Plecak utworzony!' });
+      } else {
+        toast({ title: 'Blad', description: response.error || 'Nie udalo sie utworzyc plecaka', variant: 'destructive' });
       }
     } catch {
-      addBackpack(localBackpack);
-      await saveBackpackLocal(localBackpack);
-      await queueOfflineChange('create_backpack', localBackpack as unknown as Record<string, unknown>);
-      setShowAddBackpack(false);
-      setNewBackpack({ name: '', description: '', color: '#f97316' });
-      toast({ title: 'Sukces', description: 'Plecak utworzony lokalnie (offline)' });
+      await finishLocalBackpackCreate();
     }
   };
 
   const handleDeleteBackpack = async (id: string) => {
-    try {
-      await backpacksApi.delete(id);
-    } catch {
+    if (!isBrowserOnline()) {
       await queueOfflineChange('delete_backpack', { id });
+    } else {
+      try {
+        const response = await backpacksApi.delete(id);
+        if (!response.success) {
+          await queueOfflineChange('delete_backpack', { id });
+        }
+      } catch {
+        await queueOfflineChange('delete_backpack', { id });
+      }
     }
     removeBackpack(id);
     await deleteBackpackLocal(id);
@@ -370,6 +390,25 @@ export default function Page() {
       createdAt: new Date(),
       updatedAt: new Date(),
     };
+
+    const finishAddItem = () => {
+      setShowAddItem(false);
+      setNewItem({ name: '', quantity: 1, category: 'other' });
+      setScanResult(null);
+    };
+
+    const finishLocalItemCreate = async () => {
+      addItem(localItem);
+      await saveItemLocal(localItem);
+      await queueOfflineChange('create_item', localItem as unknown as Record<string, unknown>);
+      finishAddItem();
+      toast({ title: 'Dodano!', description: 'Przedmiot dodany lokalnie (offline)' });
+    };
+
+    if (!isBrowserOnline()) {
+      await finishLocalItemCreate();
+      return;
+    }
     
     try {
       const response = await itemsApi.create({
@@ -381,17 +420,14 @@ export default function Page() {
       if (response.success && response.data) {
         addItem(response.data);
         await saveItemLocal(response.data);
+        finishAddItem();
+        toast({ title: 'Dodano!', description: 'Przedmiot dodany do plecaka' });
+      } else {
+        toast({ title: 'Blad', description: response.error || 'Nie udalo sie dodac przedmiotu', variant: 'destructive' });
       }
     } catch {
-      addItem(localItem);
-      await saveItemLocal(localItem);
-      await queueOfflineChange('create_item', localItem as unknown as Record<string, unknown>);
+      await finishLocalItemCreate();
     }
-    
-    setShowAddItem(false);
-    setNewItem({ name: '', quantity: 1, category: 'other' });
-    setScanResult(null);
-    toast({ title: 'Dodano!', description: 'Przedmiot dodany do plecaka' });
   };
 
   const handleUpdateItemQuantity = async (item: Item, delta: number) => {
@@ -405,18 +441,33 @@ export default function Page() {
     updateItem(item.id, { quantity: newQuantity });
     await saveItemLocal(updatedItem);
     
+    if (!isBrowserOnline()) {
+      await queueOfflineChange('update_item', { id: item.id, quantity: newQuantity });
+      return;
+    }
+
     try {
-      await itemsApi.update(item.id, { quantity: newQuantity });
+      const response = await itemsApi.update(item.id, { quantity: newQuantity });
+      if (!response.success) {
+        await queueOfflineChange('update_item', { id: item.id, quantity: newQuantity });
+      }
     } catch {
       await queueOfflineChange('update_item', { id: item.id, quantity: newQuantity });
     }
   };
 
   const handleDeleteItem = async (id: string) => {
-    try {
-      await itemsApi.delete(id);
-    } catch {
+    if (!isBrowserOnline()) {
       await queueOfflineChange('delete_item', { id });
+    } else {
+      try {
+        const response = await itemsApi.delete(id);
+        if (!response.success) {
+          await queueOfflineChange('delete_item', { id });
+        }
+      } catch {
+        await queueOfflineChange('delete_item', { id });
+      }
     }
     removeItem(id);
     await deleteItemLocal(id);
