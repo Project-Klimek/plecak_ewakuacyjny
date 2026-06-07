@@ -122,6 +122,8 @@ export default function Page() {
   const [shoppingStorageLoaded, setShoppingStorageLoaded] = useState(false);
   const [showAddShoppingItem, setShowAddShoppingItem] = useState(false);
   const [newShoppingItem, setNewShoppingItem] = useState({ name: '', quantity: 1, category: 'other' as ItemCategory });
+  const [pendingSyncCount, setPendingSyncCount] = useState(0);
+  const [isSyncing, setIsSyncing] = useState(false);
 
   const selectedBackpack = selectedBackpackId 
     ? backpacks.find(b => b.id === selectedBackpackId)
@@ -190,8 +192,18 @@ export default function Page() {
     return <Badge className="bg-blue-100 text-blue-700 dark:bg-blue-800 dark:text-blue-200 text-xs">Recznie</Badge>;
   };
 
+  const refreshPendingSyncCount = useCallback(async () => {
+    try {
+      const pendingChanges = await getPendingChanges();
+      setPendingSyncCount(pendingChanges.length);
+    } catch {
+      setPendingSyncCount(0);
+    }
+  }, []);
+
   const queueOfflineChange = async (type: string, data: Record<string, unknown>) => {
     await addPendingChange(type, data);
+    await refreshPendingSyncCount();
     try {
       await registerBackgroundSync();
     } catch {
@@ -203,14 +215,17 @@ export default function Page() {
 
   const syncPendingChanges = useCallback(async () => {
     const pendingChanges = await getPendingChanges();
+    setPendingSyncCount(pendingChanges.length);
     if (pendingChanges.length === 0) return true;
 
+    setIsSyncing(true);
     try {
       const response = await syncApi.sync(pendingChanges);
       const syncResult = response.data as { errors?: string[] } | undefined;
 
       if (response.success && (!syncResult?.errors || syncResult.errors.length === 0)) {
         await clearPendingChanges();
+        await refreshPendingSyncCount();
         await setLastSync(new Date());
         toast({ title: 'Synchronizacja', description: 'Zmiany offline zostaly wyslane' });
         return true;
@@ -224,8 +239,11 @@ export default function Page() {
       return false;
     } catch {
       return false;
+    } finally {
+      setIsSyncing(false);
+      await refreshPendingSyncCount();
     }
-  }, []);
+  }, [refreshPendingSyncCount]);
 
   useEffect(() => {
     try {
@@ -290,6 +308,7 @@ export default function Page() {
       try {
         const localBackpacks = await getBackpacksLocal();
         const localItems = await getItemsLocal();
+        await refreshPendingSyncCount();
         
         if (localBackpacks.length > 0) {
           setBackpacks(localBackpacks);
@@ -339,7 +358,7 @@ export default function Page() {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
     };
-  }, [syncPendingChanges]);
+  }, [refreshPendingSyncCount, syncPendingChanges]);
 
   const loadData = async () => {
     try {
@@ -363,6 +382,16 @@ export default function Page() {
     } catch (error) {
       console.error('Failed to load data from server:', error);
     }
+  };
+
+  const handleManualSync = async () => {
+    if (!isBrowserOnline()) {
+      toast({ title: 'Offline', description: 'Polacz sie z internetem, aby wyslac zmiany' });
+      return;
+    }
+
+    const synced = await syncPendingChanges();
+    if (synced) await loadData();
   };
 
   const toggleDarkMode = () => {
@@ -879,6 +908,33 @@ export default function Page() {
               onChange={(e) => setSearchQuery(e.target.value)}
               className="h-10 rounded-xl"
             />
+          </div>
+        )}
+
+        {(isOffline || pendingSyncCount > 0 || isSyncing) && (
+          <div className="px-4 pb-3">
+            <div className="flex items-center gap-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-900/30 dark:text-amber-100">
+              <RefreshCw className={`h-4 w-4 shrink-0 ${isSyncing ? 'animate-spin' : ''}`} />
+              <div className="flex-1 min-w-0">
+                <p className="font-medium truncate">
+                  {isSyncing && 'Wysylanie zmian...'}
+                  {!isSyncing && isOffline && pendingSyncCount > 0 && `${pendingSyncCount} zmian czeka na wyslanie`}
+                  {!isSyncing && isOffline && pendingSyncCount === 0 && 'Tryb offline - dane zapisuja sie lokalnie'}
+                  {!isSyncing && !isOffline && pendingSyncCount > 0 && `${pendingSyncCount} zmian czeka na synchronizacje`}
+                </p>
+              </div>
+              {!isOffline && pendingSyncCount > 0 && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8 rounded-lg bg-white/70 px-3 text-amber-900 hover:bg-white dark:bg-amber-950/40 dark:text-amber-100"
+                  onClick={handleManualSync}
+                  disabled={isSyncing}
+                >
+                  Synchronizuj
+                </Button>
+              )}
+            </div>
           </div>
         )}
       </header>
