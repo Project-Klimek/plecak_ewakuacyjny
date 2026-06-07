@@ -31,6 +31,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -98,6 +99,56 @@ interface ShoppingItem {
 const SHOPPING_LIST_KEY = 'shoppingList';
 const SHOPPING_IGNORE_KEY = 'shoppingIgnoredItemIds';
 
+type StarterChecklistItem = {
+  name: string;
+  category: ItemCategory;
+  quantity: number;
+  notes: string;
+};
+
+const STARTER_CHECKLIST: StarterChecklistItem[] = [
+  { name: 'Woda butelkowana 1,5 l', category: 'water', quantity: 3, notes: 'Minimum 9 l na osobe na 72h. Do plecaka wez 2-3 butelki 1,5 l na start; reszte transportuj osobno, jesli masz samochod.' },
+  { name: 'Tabletki do uzdatniania wody', category: 'water', quantity: 1, notes: 'Do awaryjnego uzdatniania wody.' },
+  { name: 'Konserwy', category: 'food', quantity: 3, notes: 'Mieso, ryby, gulasz lub podobne gotowe jedzenie.' },
+  { name: 'Batony energetyczne', category: 'food', quantity: 6, notes: 'Szybki zapas energii, najlepiej batony zbozowe lub energetyczne.' },
+  { name: 'Posilki suszone lub liofilizowane', category: 'food', quantity: 3, notes: 'Lekkie posilki awaryjne, np. zupy instant lub dania liofilizowane.' },
+  { name: 'Czekolada lub karmelki', category: 'food', quantity: 1, notes: 'Szybkie zrodlo energii i poprawa nastroju.' },
+  { name: 'Otwieracz do konserw', category: 'tools', quantity: 1, notes: 'Kluczowy, jesli w plecaku sa puszki.' },
+  { name: 'Kubek, talerz i sztucce', category: 'tools', quantity: 1, notes: 'Najlepiej plastikowe lub metalowe, wielorazowe.' },
+  { name: 'Apteczka pierwszej pomocy', category: 'medical', quantity: 1, notes: 'Plastry, bandaz elastyczny, srodek do dezynfekcji ran i podstawowe opatrunki.' },
+  { name: 'Leki stale', category: 'medical', quantity: 1, notes: 'Zapas minimum na 3-5 dni, szczegolnie przy chorobach przewleklych.' },
+  { name: 'Leki przeciwbolowe', category: 'medical', quantity: 1, notes: 'Np. paracetamol lub ibuprofen, zgodnie z potrzebami domownikow.' },
+  { name: 'Mydlo', category: 'medical', quantity: 1, notes: 'Mydlo w plynie lub kostka.' },
+  { name: 'Plyn do dezynfekcji rak', category: 'medical', quantity: 1, notes: 'Maly pojemnik do plecaka.' },
+  { name: 'Recznik papierowy lub sciereczki', category: 'medical', quantity: 1, notes: 'Mala rolka albo sciereczki wielorazowe.' },
+  { name: 'Pasta i szczoteczka do zebow', category: 'medical', quantity: 1, notes: 'Podstawowa higiena na 72h.' },
+  { name: 'Papier toaletowy', category: 'medical', quantity: 4, notes: 'Np. mala zgrzewka 4 rolek.' },
+  { name: 'Latarka czolowa', category: 'tools', quantity: 1, notes: 'Czolowa zostawia wolne rece; dodaj zapas baterii.' },
+  { name: 'Zapas baterii', category: 'electronics', quantity: 1, notes: 'Do latarki, radia i innych urzadzen.' },
+  { name: 'Radio przenosne', category: 'electronics', quantity: 1, notes: 'Najlepiej na korbke lub z panelem slonecznym, do odbioru komunikatow.' },
+  { name: 'Zapalki lub zapalniczka', category: 'tools', quantity: 1, notes: 'Trzymaj w wodoszczelnym opakowaniu.' },
+  { name: 'Noz wielofunkcyjny lub scyzoryk', category: 'tools', quantity: 1, notes: 'Do napraw, przygotowania jedzenia i drobnych prac.' },
+  { name: 'Kompas', category: 'tools', quantity: 1, notes: 'Awaryjna orientacja w terenie.' },
+  { name: 'Tasma klejaca srebrna', category: 'tools', quantity: 1, notes: 'Uniwersalna do napraw i zabezpieczania.' },
+  { name: 'Folia NRC', category: 'tools', quantity: 1, notes: 'Koc ratunkowy chroni przed utrata ciepla i zajmuje malo miejsca.' },
+  { name: 'Gotowka', category: 'documents', quantity: 1, notes: 'Male nominaly, kwota na 3 dni pobytu i podstawowe zakupy.' },
+  { name: 'Kserokopie dokumentow', category: 'documents', quantity: 1, notes: 'Dowod, paszport, polisy, numery kont - w wodoszczelnej torebce.' },
+  { name: 'Spis telefonow', category: 'documents', quantity: 1, notes: 'Telefony do bliskich, lekarzy i sluzb ratunkowych na kartce.' },
+  { name: 'Solidne buty', category: 'clothes', quantity: 1, notes: 'Wygodne, najlepiej za kostke.' },
+  { name: 'Bielizna i skarpety', category: 'clothes', quantity: 4, notes: '3-4 pary skarpetek oraz bielizna osobista.' },
+  { name: 'Ubranie zapasowe', category: 'clothes', quantity: 1, notes: 'Dluga koszula i spodnie, najlepiej szybkoschnace.' },
+  { name: 'Kurtka przeciwdeszczowa lub peleryna', category: 'clothes', quantity: 1, notes: 'Ochrona przed deszczem i wiatrem.' },
+  { name: 'Czapka', category: 'clothes', quantity: 1, notes: 'Dostosuj do pory roku: zimowa albo przeciwsloneczna.' },
+  { name: 'Rekawice robocze', category: 'clothes', quantity: 1, notes: 'Do ochrony dloni przy przenoszeniu i pracy.' },
+  { name: 'Biblia drukowana', category: 'documents', quantity: 1, notes: 'Male wydanie drukowane.' },
+  { name: 'Telefon z ladowarka', category: 'electronics', quantity: 1, notes: 'Naladowany telefon, ladowarka, przydatna aplikacja JW Library.' },
+  { name: 'Powerbank', category: 'electronics', quantity: 1, notes: 'Naladowany, do telefonu i drobnej elektroniki.' },
+  { name: 'Mleko modyfikowane lub kaszki', category: 'food', quantity: 1, notes: 'Dla rodzin z dziecmi: zapas na 3 dni.' },
+  { name: 'Pieluchy jednorazowe', category: 'other', quantity: 20, notes: 'Dla rodzin z dziecmi: ok. 15-20 sztuk na 3 dni.' },
+  { name: 'Chusteczki nawilzane', category: 'medical', quantity: 1, notes: 'Dla dzieci i higieny w drodze.' },
+  { name: 'Ulubiona zabawka lub pluszak', category: 'other', quantity: 1, notes: 'Pomaga dziecku w uspokojeniu.' },
+];
+
 export default function Page() {
   const {
     user, isLoading, isInitialized,
@@ -117,6 +168,7 @@ export default function Page() {
   const [loginForm, setLoginForm] = useState({ email: '', password: '' });
   const [registerForm, setRegisterForm] = useState({ email: '', password: '', name: '' });
   const [newBackpack, setNewBackpack] = useState({ name: '', description: '', color: '#f97316' });
+  const [includeStarterChecklist, setIncludeStarterChecklist] = useState(true);
   const [newItem, setNewItem] = useState<Partial<Item>>({ name: '', quantity: 1, category: 'other' });
   const [showAddBackpack, setShowAddBackpack] = useState(false);
   const [showAddItem, setShowAddItem] = useState(false);
@@ -453,8 +505,82 @@ export default function Page() {
     setView('backpacks');
   };
 
+  const addStarterShoppingItems = (starterItems: Item[]) => {
+    const shoppingItems: ShoppingItem[] = starterItems.map((item) => ({
+      id: generateId(),
+      name: item.name,
+      category: item.category,
+      quantity: item.quantity,
+      checked: false,
+      source: 'manual',
+      originalItemId: item.id,
+      addedAt: new Date().toISOString(),
+    }));
+
+    setShoppingList(prev => [...prev, ...shoppingItems]);
+  };
+
+  const createStarterChecklistItems = async (backpackId: string, mode: 'server' | 'queued') => {
+    const now = new Date();
+    const localItems: Item[] = STARTER_CHECKLIST.map((template) => ({
+      id: generateId(),
+      name: template.name,
+      quantity: template.quantity,
+      category: template.category,
+      backpackId,
+      expiryDate: null,
+      barcode: null,
+      notes: template.notes,
+      imageUrl: null,
+      createdAt: now,
+      updatedAt: now,
+    }));
+
+    for (const item of localItems) {
+      addItem(item);
+      await saveItemLocal(item);
+    }
+
+    addStarterShoppingItems(localItems);
+
+    if (mode === 'queued') {
+      for (const item of localItems) {
+        await queueOfflineChange('create_item', item as unknown as Record<string, unknown>);
+      }
+      return;
+    }
+
+    for (const item of localItems) {
+      try {
+        const response = await itemsApi.create({
+          name: item.name,
+          quantity: item.quantity,
+          category: item.category,
+          backpackId,
+          expiryDate: null,
+          barcode: null,
+          notes: item.notes,
+          imageUrl: null,
+        });
+
+        if (response.success && response.data) {
+          const serverItem = response.data as Item;
+          removeItem(item.id);
+          await deleteItemLocal(item.id);
+          addItem(serverItem);
+          await saveItemLocal(serverItem);
+        } else {
+          await queueOfflineChange('create_item', item as unknown as Record<string, unknown>);
+        }
+      } catch {
+        await queueOfflineChange('create_item', item as unknown as Record<string, unknown>);
+      }
+    }
+  };
+
   const handleCreateBackpack = async () => {
     if (!newBackpack.name.trim()) return;
+    const shouldAddStarterChecklist = includeStarterChecklist;
     
     const localBackpack: Backpack = {
       id: generateId(),
@@ -472,9 +598,18 @@ export default function Page() {
       addBackpack(localBackpack);
       await saveBackpackLocal(localBackpack);
       await queueOfflineChange('create_backpack', localBackpack as unknown as Record<string, unknown>);
+      if (shouldAddStarterChecklist) {
+        await createStarterChecklistItems(localBackpack.id, 'queued');
+      }
       setShowAddBackpack(false);
       setNewBackpack({ name: '', description: '', color: '#f97316' });
-      toast({ title: 'Sukces', description: 'Plecak utworzony lokalnie (offline)' });
+      setIncludeStarterChecklist(true);
+      toast({
+        title: 'Sukces',
+        description: shouldAddStarterChecklist
+          ? 'Plecak i checklista 72h utworzone lokalnie'
+          : 'Plecak utworzony lokalnie (offline)',
+      });
     };
 
     if (!isBrowserOnline()) {
@@ -486,6 +621,7 @@ export default function Page() {
     await saveBackpackLocal(localBackpack);
     setShowAddBackpack(false);
     setNewBackpack({ name: '', description: '', color: '#f97316' });
+    setIncludeStarterChecklist(true);
     
     try {
       const response = await backpacksApi.create(newBackpack);
@@ -494,13 +630,27 @@ export default function Page() {
         await deleteBackpackLocal(localBackpack.id);
         addBackpack(response.data);
         await saveBackpackLocal(response.data);
-        toast({ title: 'Sukces', description: 'Plecak utworzony!' });
+        if (shouldAddStarterChecklist) {
+          await createStarterChecklistItems(response.data.id, 'server');
+        }
+        toast({
+          title: 'Sukces',
+          description: shouldAddStarterChecklist
+            ? 'Plecak utworzony z checklista 72h'
+            : 'Plecak utworzony!',
+        });
       } else {
         await queueOfflineChange('create_backpack', localBackpack as unknown as Record<string, unknown>);
-        toast({ title: 'Blad', description: response.error || 'Nie udalo sie utworzyc plecaka', variant: 'destructive' });
+        if (shouldAddStarterChecklist) {
+          await createStarterChecklistItems(localBackpack.id, 'queued');
+        }
+        toast({ title: 'Sukces', description: 'Plecak utworzony lokalnie, zsynchronizuje sie pozniej' });
       }
     } catch {
       await queueOfflineChange('create_backpack', localBackpack as unknown as Record<string, unknown>);
+      if (shouldAddStarterChecklist) {
+        await createStarterChecklistItems(localBackpack.id, 'queued');
+      }
       toast({ title: 'Sukces', description: 'Plecak utworzony lokalnie (offline)' });
     }
   };
@@ -1520,6 +1670,22 @@ export default function Page() {
                     title={color.name}
                   />
                 ))}
+              </div>
+            </div>
+            <div className="flex items-start gap-3 rounded-xl border border-neutral-200 bg-neutral-50 p-3 dark:border-neutral-800 dark:bg-neutral-900">
+              <Checkbox
+                id="starter-checklist"
+                checked={includeStarterChecklist}
+                onCheckedChange={(checked) => setIncludeStarterChecklist(checked === true)}
+                className="mt-1"
+              />
+              <div className="space-y-1">
+                <Label htmlFor="starter-checklist" className="text-base font-medium">
+                  Dodaj checkliste 72h
+                </Label>
+                <p className="text-sm text-neutral-500 dark:text-neutral-400">
+                  Utworzy podstawowe pozycje w plecaku i doda je do listy zakupow do odhaczenia.
+                </p>
               </div>
             </div>
           </div>
