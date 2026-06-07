@@ -83,6 +83,15 @@ const backpackColors = [
   { name: 'Indygo', value: '#6366f1' },
 ];
 
+type BackpackAudience = 'adult' | 'child' | 'pet' | 'dependent';
+
+const backpackAudiences: { value: BackpackAudience; label: string; description: string; icon: React.ReactNode }[] = [
+  { value: 'adult', label: 'Dorosly', description: 'Standardowy plecak 72h', icon: <Backpack className="h-4 w-4" /> },
+  { value: 'child', label: 'Dziecko', description: 'Plecak dla dziecka', icon: <Shirt className="h-4 w-4" /> },
+  { value: 'pet', label: 'Zwierzak', description: 'Rzeczy dla zwierzecia', icon: <Package className="h-4 w-4" /> },
+  { value: 'dependent', label: 'Opieka', description: 'Osoba pod opieka', icon: <Heart className="h-4 w-4" /> },
+];
+
 type ViewState = 'backpacks' | 'categories' | 'items' | 'expiring' | 'expired' | 'shopping';
 
 interface ShoppingItem {
@@ -98,6 +107,22 @@ interface ShoppingItem {
 
 const SHOPPING_LIST_KEY = 'shoppingList';
 const SHOPPING_IGNORE_KEY = 'shoppingIgnoredItemIds';
+const AUDIENCE_ICON_PREFIX = 'audience:';
+
+const getBackpackAudience = (icon?: string | null): BackpackAudience => {
+  const value = icon?.startsWith(AUDIENCE_ICON_PREFIX)
+    ? icon.slice(AUDIENCE_ICON_PREFIX.length)
+    : 'adult';
+
+  return backpackAudiences.some(audience => audience.value === value)
+    ? value as BackpackAudience
+    : 'adult';
+};
+
+const getBackpackAudienceMeta = (icon?: string | null) => {
+  const audience = getBackpackAudience(icon);
+  return backpackAudiences.find(item => item.value === audience) || backpackAudiences[0];
+};
 
 type StarterChecklistItem = {
   name: string;
@@ -167,7 +192,12 @@ export default function Page() {
   const [selectedCategory, setSelectedCategory] = useState<ItemCategory | null>(null);
   const [loginForm, setLoginForm] = useState({ email: '', password: '' });
   const [registerForm, setRegisterForm] = useState({ email: '', password: '', name: '' });
-  const [newBackpack, setNewBackpack] = useState({ name: '', description: '', color: '#f97316' });
+  const [newBackpack, setNewBackpack] = useState({
+    name: '',
+    description: '',
+    color: '#f97316',
+    audience: 'adult' as BackpackAudience,
+  });
   const [includeStarterChecklist, setIncludeStarterChecklist] = useState(true);
   const [newItem, setNewItem] = useState<Partial<Item>>({ name: '', quantity: 1, category: 'other' });
   const [showAddBackpack, setShowAddBackpack] = useState(false);
@@ -581,13 +611,19 @@ export default function Page() {
   const handleCreateBackpack = async () => {
     if (!newBackpack.name.trim()) return;
     const shouldAddStarterChecklist = includeStarterChecklist;
+    const backpackPayload = {
+      name: newBackpack.name,
+      description: newBackpack.description,
+      color: newBackpack.color,
+      icon: `${AUDIENCE_ICON_PREFIX}${newBackpack.audience}`,
+    };
     
     const localBackpack: Backpack = {
       id: generateId(),
-      name: newBackpack.name,
-      description: newBackpack.description || '',
-      color: newBackpack.color || '#f97316',
-      icon: 'backpack',
+      name: backpackPayload.name,
+      description: backpackPayload.description || '',
+      color: backpackPayload.color || '#f97316',
+      icon: backpackPayload.icon,
       userId: user?.id || 'local',
       items: [],
       createdAt: new Date(),
@@ -602,7 +638,7 @@ export default function Page() {
         await createStarterChecklistItems(localBackpack.id, 'queued');
       }
       setShowAddBackpack(false);
-      setNewBackpack({ name: '', description: '', color: '#f97316' });
+      setNewBackpack({ name: '', description: '', color: '#f97316', audience: 'adult' });
       setIncludeStarterChecklist(true);
       toast({
         title: 'Sukces',
@@ -620,11 +656,11 @@ export default function Page() {
     addBackpack(localBackpack);
     await saveBackpackLocal(localBackpack);
     setShowAddBackpack(false);
-    setNewBackpack({ name: '', description: '', color: '#f97316' });
+    setNewBackpack({ name: '', description: '', color: '#f97316', audience: 'adult' });
     setIncludeStarterChecklist(true);
     
     try {
-      const response = await backpacksApi.create(newBackpack);
+      const response = await backpacksApi.create(backpackPayload);
       if (response.success && response.data) {
         removeBackpack(localBackpack.id);
         await deleteBackpackLocal(localBackpack.id);
@@ -1200,6 +1236,7 @@ export default function Page() {
                   const backpackExpiredCount = expiredItems.filter(i => i.backpackId === backpack.id).length;
                   const backpackExpiringCount = expiringItems.filter(i => i.backpackId === backpack.id).length;
                   const backpackIssueCount = backpackExpiredCount + backpackExpiringCount;
+                  const audienceMeta = getBackpackAudienceMeta(backpack.icon);
                   const isDeleting = deleteConfirm === backpack.id;
                   
                   return (
@@ -1217,6 +1254,7 @@ export default function Page() {
                             </div>
                             <p className="font-semibold text-base truncate">{backpack.name}</p>
                             <p className="text-sm text-neutral-500 dark:text-neutral-400">{itemCount} przedmiotow</p>
+                            <p className="mt-1 text-xs text-neutral-400">{audienceMeta.label}</p>
                           </div>
                           {isDeleting ? (
                             <div className="flex gap-1">
@@ -1657,6 +1695,31 @@ export default function Page() {
                 onChange={(e) => setNewBackpack({ ...newBackpack, description: e.target.value })}
                 className="rounded-xl"
               />
+            </div>
+            <div>
+              <Label className="text-base">Dla kogo?</Label>
+              <div className="grid grid-cols-2 gap-2 mt-2">
+                {backpackAudiences.map((audience) => (
+                  <button
+                    key={audience.value}
+                    type="button"
+                    className={`rounded-xl border p-3 text-left transition-colors ${
+                      newBackpack.audience === audience.value
+                        ? 'border-neutral-950 bg-neutral-100 dark:border-neutral-100 dark:bg-neutral-800'
+                        : 'border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-900'
+                    }`}
+                    onClick={() => setNewBackpack({ ...newBackpack, audience: audience.value })}
+                  >
+                    <span className="flex items-center gap-2 font-medium">
+                      {audience.icon}
+                      {audience.label}
+                    </span>
+                    <span className="mt-1 block text-xs text-neutral-500 dark:text-neutral-400">
+                      {audience.description}
+                    </span>
+                  </button>
+                ))}
+              </div>
             </div>
             <div>
               <Label className="text-base">Kolor</Label>
