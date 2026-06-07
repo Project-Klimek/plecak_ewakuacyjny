@@ -38,7 +38,7 @@ import {
   Backpack, Plus, Trash2, LogOut,
   Utensils, Droplet, Heart, Wrench, FileText, Shirt, Smartphone, Package,
   Camera, Download, Moon, Sun, RefreshCw, 
-  ChevronRight, AlertTriangle, X, Check, Search, Minus
+  ChevronRight, AlertTriangle, X, Check, Search, Minus, ShoppingCart
 } from 'lucide-react';
 
 const categoryIcons: Record<ItemCategory, React.ReactNode> = {
@@ -74,7 +74,21 @@ const backpackColors = [
   { name: 'Indygo', value: '#6366f1' },
 ];
 
-type ViewState = 'backpacks' | 'categories' | 'items' | 'expiring' | 'expired';
+type ViewState = 'backpacks' | 'categories' | 'items' | 'expiring' | 'expired' | 'shopping';
+
+interface ShoppingItem {
+  id: string;
+  name: string;
+  category: ItemCategory;
+  quantity: number;
+  checked: boolean;
+  source: 'expired' | 'expiring' | 'manual';
+  originalItemId?: string;
+  addedAt: string;
+}
+
+const SHOPPING_LIST_KEY = 'shoppingList';
+const SHOPPING_IGNORE_KEY = 'shoppingIgnoredItemIds';
 
 export default function Page() {
   const {
@@ -103,6 +117,11 @@ export default function Page() {
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [showSearch, setShowSearch] = useState(false);
+  const [shoppingList, setShoppingList] = useState<ShoppingItem[]>([]);
+  const [shoppingIgnoredItemIds, setShoppingIgnoredItemIds] = useState<string[]>([]);
+  const [shoppingStorageLoaded, setShoppingStorageLoaded] = useState(false);
+  const [showAddShoppingItem, setShowAddShoppingItem] = useState(false);
+  const [newShoppingItem, setNewShoppingItem] = useState({ name: '', quantity: 1, category: 'other' as ItemCategory });
 
   const selectedBackpack = selectedBackpackId 
     ? backpacks.find(b => b.id === selectedBackpackId)
@@ -139,9 +158,37 @@ export default function Page() {
     return expDate < new Date();
   });
 
+  const activeShoppingCount = shoppingList.filter(item => !item.checked).length;
+  const checkedShoppingCount = shoppingList.length - activeShoppingCount;
+  const shoppingItemsByCategory = shoppingList.reduce((acc, item) => {
+    if (!acc[item.category]) acc[item.category] = [];
+    acc[item.category].push(item);
+    return acc;
+  }, {} as Record<ItemCategory, ShoppingItem[]>);
+
   const categoryItems = selectedCategory 
     ? backpackItems.filter(i => i.category === selectedCategory)
     : [];
+
+  const getShoppingSourceForItem = useCallback((item: Item): ShoppingItem['source'] | null => {
+    if (!item.expiryDate) return null;
+    const expDate = new Date(item.expiryDate);
+    const now = new Date();
+    const diffDays = Math.ceil((expDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+    if (expDate < now) return 'expired';
+    if (diffDays <= 7 && diffDays >= 0) return 'expiring';
+    return null;
+  }, []);
+
+  const getSourceBadge = (source: ShoppingItem['source']) => {
+    if (source === 'expired') {
+      return <Badge className="bg-red-100 text-red-700 dark:bg-red-800 dark:text-red-200 text-xs">Po terminie</Badge>;
+    }
+    if (source === 'expiring') {
+      return <Badge className="bg-amber-100 text-amber-700 dark:bg-amber-800 dark:text-amber-200 text-xs">Konczy sie</Badge>;
+    }
+    return <Badge className="bg-blue-100 text-blue-700 dark:bg-blue-800 dark:text-blue-200 text-xs">Recznie</Badge>;
+  };
 
   const queueOfflineChange = async (type: string, data: Record<string, unknown>) => {
     await addPendingChange(type, data);
@@ -179,6 +226,64 @@ export default function Page() {
       return false;
     }
   }, []);
+
+  useEffect(() => {
+    try {
+      const savedShoppingList = localStorage.getItem(SHOPPING_LIST_KEY);
+      const savedIgnoredIds = localStorage.getItem(SHOPPING_IGNORE_KEY);
+
+      if (savedShoppingList) {
+        setShoppingList(JSON.parse(savedShoppingList));
+      }
+      if (savedIgnoredIds) {
+        setShoppingIgnoredItemIds(JSON.parse(savedIgnoredIds));
+      }
+    } catch (e) {
+      console.error('Failed to load shopping list:', e);
+    } finally {
+      setShoppingStorageLoaded(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!shoppingStorageLoaded) return;
+    localStorage.setItem(SHOPPING_LIST_KEY, JSON.stringify(shoppingList));
+    localStorage.setItem(SHOPPING_IGNORE_KEY, JSON.stringify(shoppingIgnoredItemIds));
+  }, [shoppingList, shoppingIgnoredItemIds, shoppingStorageLoaded]);
+
+  useEffect(() => {
+    if (!shoppingStorageLoaded) return;
+
+    setShoppingList((currentList) => {
+      const existingAutoIds = new Set(
+        currentList
+          .filter(item => item.source !== 'manual' && item.originalItemId)
+          .map(item => item.originalItemId)
+      );
+      const ignoredIds = new Set(shoppingIgnoredItemIds);
+      const additions: ShoppingItem[] = [];
+
+      items.forEach((item) => {
+        if (existingAutoIds.has(item.id) || ignoredIds.has(item.id)) return;
+
+        const source = getShoppingSourceForItem(item);
+        if (!source) return;
+
+        additions.push({
+          id: generateId(),
+          name: item.name,
+          category: item.category,
+          quantity: Math.max(1, item.quantity),
+          checked: false,
+          source,
+          originalItemId: item.id,
+          addedAt: new Date().toISOString(),
+        });
+      });
+
+      return additions.length > 0 ? [...currentList, ...additions] : currentList;
+    });
+  }, [getShoppingSourceForItem, items, shoppingIgnoredItemIds, shoppingStorageLoaded]);
 
   useEffect(() => {
     const init = async () => {
@@ -488,6 +593,73 @@ export default function Page() {
     toast({ title: 'Usunieto', description: 'Przedmiot usuniety' });
   };
 
+  const toggleShoppingItem = (id: string) => {
+    setShoppingList(prev => prev.map(item =>
+      item.id === id ? { ...item, checked: !item.checked } : item
+    ));
+  };
+
+  const removeShoppingItem = (id: string) => {
+    const removedItem = shoppingList.find(item => item.id === id);
+    if (removedItem?.originalItemId) {
+      setShoppingIgnoredItemIds(ids => (
+        ids.includes(removedItem.originalItemId!) ? ids : [...ids, removedItem.originalItemId!]
+      ));
+    }
+    setShoppingList(prev => prev.filter(item => item.id !== id));
+  };
+
+  const addManualShoppingItem = () => {
+    if (!newShoppingItem.name.trim()) return;
+
+    const item: ShoppingItem = {
+      id: generateId(),
+      name: newShoppingItem.name.trim(),
+      category: newShoppingItem.category,
+      quantity: Math.max(1, newShoppingItem.quantity || 1),
+      checked: false,
+      source: 'manual',
+      addedAt: new Date().toISOString(),
+    };
+
+    setShoppingList(prev => [...prev, item]);
+    setNewShoppingItem({ name: '', quantity: 1, category: 'other' });
+    setShowAddShoppingItem(false);
+    toast({ title: 'Dodano', description: 'Pozycja dodana do listy zakupow' });
+  };
+
+  const clearCheckedShoppingItems = () => {
+    const checkedOriginalIds = shoppingList
+      .filter(item => item.checked && item.originalItemId)
+      .map(item => item.originalItemId!);
+
+    if (checkedOriginalIds.length > 0) {
+      setShoppingIgnoredItemIds(ids => Array.from(new Set([...ids, ...checkedOriginalIds])));
+    }
+
+    setShoppingList(prev => prev.filter(item => !item.checked));
+    toast({ title: 'Wyczyszczono', description: 'Kupione pozycje usuniete z listy' });
+  };
+
+  const exportShoppingList = () => {
+    const text = shoppingList
+      .map(item => {
+        const category = ITEM_CATEGORIES.find(cat => cat.value === item.category)?.label || item.category;
+        return `${item.checked ? '[x]' : '[ ]'} ${item.name} x${item.quantity} (${category})`;
+      })
+      .join('\n');
+    const blob = new Blob([`Lista zakupow - ${new Date().toLocaleDateString('pl-PL')}\n\n${text}`], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `lista-zakupow-${new Date().toISOString().split('T')[0]}.txt`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    toast({ title: 'Wyeksportowano', description: 'Lista zakupow pobrana' });
+  };
+
   const handleScan = useCallback(async (file: File) => {
     setScanning(true);
     setScanResult(null);
@@ -547,7 +719,7 @@ export default function Page() {
     if (view === 'items') {
       setSelectedCategory(null);
       setView('categories');
-    } else if (view === 'categories' || view === 'expiring' || view === 'expired') {
+    } else if (view === 'categories' || view === 'expiring' || view === 'expired' || view === 'shopping') {
       setSelectedBackpackId(null);
       setView('backpacks');
     }
@@ -681,6 +853,7 @@ export default function Page() {
               {view === 'items' && `${selectedBackpack?.name} - ${ITEM_CATEGORIES.find(c => c.value === selectedCategory)?.label}`}
               {view === 'expiring' && 'Konczace sie'}
               {view === 'expired' && 'Przeterminowane'}
+              {view === 'shopping' && 'Lista zakupow'}
             </h1>
           </div>
           <div className="flex items-center gap-2">
@@ -713,23 +886,32 @@ export default function Page() {
       <main className="px-4 py-4 pb-24">
         {view === 'backpacks' && (
           <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-3">
-              <Card 
+            <div className="grid grid-cols-3 gap-3">
+              <Card
                 className="rounded-2xl cursor-pointer active:scale-[0.98] transition-transform"
                 onClick={() => setView('expiring')}
               >
                 <CardContent className="p-4 text-center">
-                  <p className="text-3xl font-bold text-amber-500">{expiringItems.length}</p>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">Konczy sie (7 dni)</p>
+                  <p className="text-2xl font-bold text-amber-500">{expiringItems.length}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Konczy sie</p>
                 </CardContent>
               </Card>
-              <Card 
+              <Card
                 className="rounded-2xl cursor-pointer active:scale-[0.98] transition-transform"
                 onClick={() => setView('expired')}
               >
                 <CardContent className="p-4 text-center">
-                  <p className="text-3xl font-bold text-red-500">{expiredItems.length}</p>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">Przeterminowane</p>
+                  <p className="text-2xl font-bold text-red-500">{expiredItems.length}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Po terminie</p>
+                </CardContent>
+              </Card>
+              <Card
+                className="rounded-2xl cursor-pointer active:scale-[0.98] transition-transform"
+                onClick={() => setView('shopping')}
+              >
+                <CardContent className="p-4 text-center">
+                  <p className="text-2xl font-bold text-green-600">{activeShoppingCount}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Do kupienia</p>
                 </CardContent>
               </Card>
             </div>
@@ -920,6 +1102,121 @@ export default function Page() {
           </div>
         )}
 
+        {view === 'shopping' && (
+          <div className="space-y-4">
+            <div className="flex gap-2">
+              <Button
+                className="flex-1 h-12 rounded-xl bg-green-600 hover:bg-green-700"
+                onClick={() => setShowAddShoppingItem(true)}
+              >
+                <Plus className="h-5 w-5 mr-2" />
+                Dodaj pozycje
+              </Button>
+              <Button
+                variant="outline"
+                className="h-12 rounded-xl px-4"
+                onClick={exportShoppingList}
+                disabled={shoppingList.length === 0}
+              >
+                <Download className="h-5 w-5" />
+              </Button>
+            </div>
+
+            <Card className="rounded-2xl border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/20">
+              <CardContent className="p-4 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-11 h-11 rounded-xl bg-green-600 text-white flex items-center justify-center">
+                    <ShoppingCart className="h-6 w-6" />
+                  </div>
+                  <div>
+                    <p className="font-semibold text-lg">{activeShoppingCount} pozycji</p>
+                    <p className="text-sm text-gray-500">do kupienia</p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <p className="text-sm text-gray-500">{checkedShoppingCount} kupione</p>
+                  {checkedShoppingCount > 0 && (
+                    <Button variant="ghost" size="sm" className="text-red-500 text-xs h-7 px-2" onClick={clearCheckedShoppingItems}>
+                      Wyczysc
+                    </Button>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
+            {shoppingList.length === 0 ? (
+              <Card className="rounded-2xl p-8 text-center">
+                <ShoppingCart className="h-16 w-16 mx-auto text-gray-300 mb-4" />
+                <p className="text-gray-500">Lista zakupow jest pusta</p>
+                <p className="text-sm text-gray-400 mt-1">Produkty do wymiany dodadza sie automatycznie</p>
+              </Card>
+            ) : (
+              <div className="space-y-4">
+                {Object.entries(shoppingItemsByCategory).map(([category, categoryItems]) => {
+                  const itemCategory = category as ItemCategory;
+                  const label = ITEM_CATEGORIES.find(cat => cat.value === itemCategory)?.label || category;
+
+                  return (
+                    <div key={category} className="space-y-2">
+                      <div className="flex items-center gap-2 px-1">
+                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-white ${categoryColors[itemCategory]}`}>
+                          {categoryIcons[itemCategory]}
+                        </div>
+                        <h2 className="font-semibold">{label}</h2>
+                        <Badge variant="outline" className="ml-auto">{categoryItems.length}</Badge>
+                      </div>
+
+                      {categoryItems.map((item) => (
+                        <Card key={item.id} className="rounded-xl">
+                          <div className="flex items-center gap-3 p-3">
+                            <button
+                              type="button"
+                              onClick={() => toggleShoppingItem(item.id)}
+                              className={`w-7 h-7 rounded-full border-2 flex items-center justify-center shrink-0 ${
+                                item.checked
+                                  ? 'bg-green-500 border-green-500 text-white'
+                                  : 'border-gray-300 dark:border-gray-600'
+                              }`}
+                              aria-label={item.checked ? 'Odznacz' : 'Odhacz'}
+                            >
+                              {item.checked && <Check className="h-4 w-4" />}
+                            </button>
+
+                            <button
+                              type="button"
+                              className="flex-1 min-w-0 text-left"
+                              onClick={() => toggleShoppingItem(item.id)}
+                            >
+                              <div className="flex items-center gap-2 min-w-0">
+                                <p className={`font-medium truncate ${item.checked ? 'line-through text-gray-400' : ''}`}>
+                                  {item.name}
+                                </p>
+                                <Badge variant="outline" className="text-xs shrink-0">x{item.quantity}</Badge>
+                              </div>
+                              <div className="mt-1">
+                                {getSourceBadge(item.source)}
+                              </div>
+                            </button>
+
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-red-500 shrink-0"
+                              onClick={() => removeShoppingItem(item.id)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </Card>
+                      ))}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+
         {view === 'expiring' && (
           <div className="space-y-2">
             {expiringItems.length === 0 ? (
@@ -1009,7 +1306,7 @@ export default function Page() {
       </main>
 
       <nav className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 z-50">
-        <div className="grid grid-cols-4 h-16">
+        <div className="grid grid-cols-5 h-16">
           <button
             className={`flex flex-col items-center justify-center ${view === 'backpacks' ? 'text-orange-500' : 'text-gray-500'}`}
             onClick={() => { setView('backpacks'); setSelectedBackpackId(null); }}
@@ -1018,16 +1315,28 @@ export default function Page() {
             <span className="text-xs mt-1">Plecaki</span>
           </button>
           <button
+            className={`flex flex-col items-center justify-center relative ${view === 'shopping' ? 'text-green-600' : 'text-gray-500'}`}
+            onClick={() => setView('shopping')}
+          >
+            <ShoppingCart className="h-5 w-5" />
+            {activeShoppingCount > 0 && (
+              <span className="absolute top-1 right-1/4 min-w-4 h-4 px-1 bg-green-500 text-white text-[10px] rounded-full flex items-center justify-center">
+                {activeShoppingCount}
+              </span>
+            )}
+            <span className="text-xs mt-1">Zakupy</span>
+          </button>
+          <button
             className={`flex flex-col items-center justify-center relative ${view === 'expiring' ? 'text-orange-500' : 'text-gray-500'}`}
             onClick={() => setView('expiring')}
           >
             <AlertTriangle className="h-5 w-5" />
             {expiringItems.length > 0 && (
-              <span className="absolute top-1 right-1/4 w-4 h-4 bg-amber-500 text-white text-[10px] rounded-full flex items-center justify-center">
+              <span className="absolute top-1 right-1/4 min-w-4 h-4 px-1 bg-amber-500 text-white text-[10px] rounded-full flex items-center justify-center">
                 {expiringItems.length}
               </span>
             )}
-            <span className="text-xs mt-1">Koncza sie</span>
+            <span className="text-[10px] mt-1">Koncza</span>
           </button>
           <button
             className={`flex flex-col items-center justify-center relative ${view === 'expired' ? 'text-orange-500' : 'text-gray-500'}`}
@@ -1035,11 +1344,11 @@ export default function Page() {
           >
             <Trash2 className="h-5 w-5" />
             {expiredItems.length > 0 && (
-              <span className="absolute top-1 right-1/4 w-4 h-4 bg-red-500 text-white text-[10px] rounded-full flex items-center justify-center">
+              <span className="absolute top-1 right-1/4 min-w-4 h-4 px-1 bg-red-500 text-white text-[10px] rounded-full flex items-center justify-center">
                 {expiredItems.length}
               </span>
             )}
-            <span className="text-xs mt-1">Przeterminowane</span>
+            <span className="text-[10px] mt-1">Po terminie</span>
           </button>
           <button
             className="flex flex-col items-center justify-center text-gray-500"
@@ -1215,6 +1524,72 @@ export default function Page() {
               <Check className="h-5 w-5 mr-2" />
               Dodaj przedmiot
             </Button>
+          </div>
+        </SheetContent>
+      </Sheet>
+
+      <Sheet open={showAddShoppingItem} onOpenChange={setShowAddShoppingItem}>
+        <SheetContent side="bottom" className="rounded-t-3xl">
+          <SheetHeader>
+            <SheetTitle className="text-xl flex items-center gap-2">
+              <ShoppingCart className="h-5 w-5" />
+              Dodaj do zakupow
+            </SheetTitle>
+          </SheetHeader>
+          <div className="space-y-4 mt-4">
+            <div>
+              <Label className="text-base">Nazwa *</Label>
+              <Input
+                placeholder="np. baterie AA"
+                value={newShoppingItem.name}
+                onChange={(e) => setNewShoppingItem({ ...newShoppingItem, name: e.target.value })}
+                className="h-12 rounded-xl text-base"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label className="text-base">Ilosc</Label>
+                <Input
+                  type="number"
+                  min="1"
+                  value={newShoppingItem.quantity}
+                  onChange={(e) => setNewShoppingItem({ ...newShoppingItem, quantity: parseInt(e.target.value) || 1 })}
+                  className="h-12 rounded-xl text-base"
+                />
+              </div>
+              <div>
+                <Label className="text-base">Kategoria</Label>
+                <Select
+                  value={newShoppingItem.category}
+                  onValueChange={(v) => setNewShoppingItem({ ...newShoppingItem, category: v as ItemCategory })}
+                >
+                  <SelectTrigger className="h-12 rounded-xl">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {ITEM_CATEGORIES.map((cat) => (
+                      <SelectItem key={cat.value} value={cat.value}>
+                        <div className="flex items-center gap-2">
+                          {categoryIcons[cat.value]}
+                          {cat.label}
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="flex gap-2 pt-2">
+              <Button onClick={addManualShoppingItem} className="flex-1 h-12 rounded-xl bg-green-600 hover:bg-green-700">
+                <Plus className="h-5 w-5 mr-2" />
+                Dodaj
+              </Button>
+              <Button variant="outline" onClick={() => setShowAddShoppingItem(false)} className="h-12 rounded-xl">
+                Anuluj
+              </Button>
+            </div>
           </div>
         </SheetContent>
       </Sheet>
