@@ -338,20 +338,27 @@ export default function Page() {
       await finishLocalBackpackCreate();
       return;
     }
+
+    addBackpack(localBackpack);
+    await saveBackpackLocal(localBackpack);
+    setShowAddBackpack(false);
+    setNewBackpack({ name: '', description: '', color: '#f97316' });
     
     try {
       const response = await backpacksApi.create(newBackpack);
       if (response.success && response.data) {
+        removeBackpack(localBackpack.id);
+        await deleteBackpackLocal(localBackpack.id);
         addBackpack(response.data);
         await saveBackpackLocal(response.data);
-        setShowAddBackpack(false);
-        setNewBackpack({ name: '', description: '', color: '#f97316' });
         toast({ title: 'Sukces', description: 'Plecak utworzony!' });
       } else {
+        await queueOfflineChange('create_backpack', localBackpack as unknown as Record<string, unknown>);
         toast({ title: 'Blad', description: response.error || 'Nie udalo sie utworzyc plecaka', variant: 'destructive' });
       }
     } catch {
-      await finishLocalBackpackCreate();
+      await queueOfflineChange('create_backpack', localBackpack as unknown as Record<string, unknown>);
+      toast({ title: 'Sukces', description: 'Plecak utworzony lokalnie (offline)' });
     }
   };
 
@@ -409,6 +416,10 @@ export default function Page() {
       await finishLocalItemCreate();
       return;
     }
+
+    addItem(localItem);
+    await saveItemLocal(localItem);
+    finishAddItem();
     
     try {
       const response = await itemsApi.create({
@@ -418,15 +429,18 @@ export default function Page() {
         category: newItem.category || 'other',
       });
       if (response.success && response.data) {
+        removeItem(localItem.id);
+        await deleteItemLocal(localItem.id);
         addItem(response.data);
         await saveItemLocal(response.data);
-        finishAddItem();
         toast({ title: 'Dodano!', description: 'Przedmiot dodany do plecaka' });
       } else {
+        await queueOfflineChange('create_item', localItem as unknown as Record<string, unknown>);
         toast({ title: 'Blad', description: response.error || 'Nie udalo sie dodac przedmiotu', variant: 'destructive' });
       }
     } catch {
-      await finishLocalItemCreate();
+      await queueOfflineChange('create_item', localItem as unknown as Record<string, unknown>);
+      toast({ title: 'Dodano!', description: 'Przedmiot dodany lokalnie (offline)' });
     }
   };
 
