@@ -92,7 +92,7 @@ const backpackAudiences: { value: BackpackAudience; label: string; description: 
   { value: 'dependent', label: 'Opieka', description: 'Osoba pod opieka', icon: <Heart className="h-4 w-4" /> },
 ];
 
-type ViewState = 'backpacks' | 'categories' | 'items' | 'expiring' | 'expired' | 'shopping';
+type ViewState = 'backpacks' | 'categories' | 'items' | 'expiring' | 'expired' | 'shopping' | 'info';
 
 interface ShoppingItem {
   id: string;
@@ -105,9 +105,36 @@ interface ShoppingItem {
   addedAt: string;
 }
 
+interface ImportantNote {
+  id: string;
+  title: string;
+  content: string;
+  createdAt: string;
+}
+
 const SHOPPING_LIST_KEY = 'shoppingList';
 const SHOPPING_IGNORE_KEY = 'shoppingIgnoredItemIds';
+const IMPORTANT_INFO_KEY = 'importantInfoNotes';
 const AUDIENCE_ICON_PREFIX = 'audience:';
+
+const GENERAL_IMPORTANT_INFO = [
+  {
+    title: 'Plan kontaktu',
+    content: 'Ustal, kto do kogo dzwoni, gdzie spotykacie sie po ewakuacji i jaki jest kontakt zapasowy poza miejscem zamieszkania.',
+  },
+  {
+    title: 'Dokumenty i kopie',
+    content: 'Trzymaj kopie dokumentow, polis, recept i waznych numerow w wodoszczelnej kopercie oraz w bezpiecznej kopii cyfrowej.',
+  },
+  {
+    title: 'Zdrowie',
+    content: 'Zapisz leki stale, dawki, alergie, choroby przewlekle oraz kontakt do lekarza. To moze byc kluczowe przy udzielaniu pomocy.',
+  },
+  {
+    title: 'Dom i media',
+    content: 'Zapisz, gdzie sa zawory wody, gazu, bezpieczniki, latarka awaryjna i zapasowe klucze.',
+  },
+];
 
 const getBackpackAudience = (icon?: string | null): BackpackAudience => {
   const value = icon?.startsWith(AUDIENCE_ICON_PREFIX)
@@ -224,6 +251,10 @@ export default function Page() {
   const [shoppingStorageLoaded, setShoppingStorageLoaded] = useState(false);
   const [showAddShoppingItem, setShowAddShoppingItem] = useState(false);
   const [newShoppingItem, setNewShoppingItem] = useState({ name: '', quantity: 1, category: 'other' as ItemCategory });
+  const [importantNotes, setImportantNotes] = useState<ImportantNote[]>([]);
+  const [infoStorageLoaded, setInfoStorageLoaded] = useState(false);
+  const [showAddImportantNote, setShowAddImportantNote] = useState(false);
+  const [newImportantNote, setNewImportantNote] = useState({ title: '', content: '' });
   const [pendingSyncCount, setPendingSyncCount] = useState(0);
   const [isSyncing, setIsSyncing] = useState(false);
 
@@ -371,6 +402,24 @@ export default function Page() {
     localStorage.setItem(SHOPPING_LIST_KEY, JSON.stringify(shoppingList));
     localStorage.setItem(SHOPPING_IGNORE_KEY, JSON.stringify(shoppingIgnoredItemIds));
   }, [shoppingList, shoppingIgnoredItemIds, shoppingStorageLoaded]);
+
+  useEffect(() => {
+    try {
+      const savedNotes = localStorage.getItem(IMPORTANT_INFO_KEY);
+      if (savedNotes) {
+        setImportantNotes(JSON.parse(savedNotes));
+      }
+    } catch (e) {
+      console.error('Failed to load important notes:', e);
+    } finally {
+      setInfoStorageLoaded(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!infoStorageLoaded) return;
+    localStorage.setItem(IMPORTANT_INFO_KEY, JSON.stringify(importantNotes));
+  }, [importantNotes, infoStorageLoaded]);
 
   useEffect(() => {
     if (!shoppingStorageLoaded) return;
@@ -898,6 +947,27 @@ export default function Page() {
     toast({ title: 'Wyeksportowano', description: 'Lista zakupow pobrana' });
   };
 
+  const addImportantNote = () => {
+    if (!newImportantNote.title.trim() || !newImportantNote.content.trim()) return;
+
+    const note: ImportantNote = {
+      id: generateId(),
+      title: newImportantNote.title.trim(),
+      content: newImportantNote.content.trim(),
+      createdAt: new Date().toISOString(),
+    };
+
+    setImportantNotes(prev => [note, ...prev]);
+    setNewImportantNote({ title: '', content: '' });
+    setShowAddImportantNote(false);
+    toast({ title: 'Dodano', description: 'Informacja zostala zapisana lokalnie' });
+  };
+
+  const removeImportantNote = (id: string) => {
+    setImportantNotes(prev => prev.filter(note => note.id !== id));
+    toast({ title: 'Usunieto', description: 'Informacja zostala usunieta' });
+  };
+
   const handleScan = useCallback(async (file: File) => {
     setScanning(true);
     setScanResult(null);
@@ -957,7 +1027,7 @@ export default function Page() {
     if (view === 'items') {
       setSelectedCategory(null);
       setView('categories');
-    } else if (view === 'categories' || view === 'expiring' || view === 'expired' || view === 'shopping') {
+    } else if (view === 'categories' || view === 'expiring' || view === 'expired' || view === 'shopping' || view === 'info') {
       setSelectedBackpackId(null);
       setView('backpacks');
     }
@@ -1092,6 +1162,7 @@ export default function Page() {
               {view === 'expiring' && 'Konczace sie'}
               {view === 'expired' && 'Przeterminowane'}
               {view === 'shopping' && 'Lista zakupow'}
+              {view === 'info' && 'Wazne informacje'}
             </h1>
           </div>
           <div className="flex items-center gap-2">
@@ -1118,6 +1189,12 @@ export default function Page() {
                   <Plus className="h-4 w-4" />
                   Nowy plecak
                 </DropdownMenuItem>
+                {view === 'info' && (
+                  <DropdownMenuItem onSelect={() => setShowAddImportantNote(true)}>
+                    <FileText className="h-4 w-4" />
+                    Dodaj informacje
+                  </DropdownMenuItem>
+                )}
                 {!isOffline && pendingSyncCount > 0 && (
                   <DropdownMenuItem onSelect={handleManualSync} disabled={isSyncing}>
                     <RefreshCw className={`h-4 w-4 ${isSyncing ? 'animate-spin' : ''}`} />
@@ -1550,6 +1627,86 @@ export default function Page() {
           </div>
         )}
 
+        {view === 'info' && (
+          <div className="space-y-4">
+            <Card className="rounded-lg border-neutral-200 bg-white shadow-sm dark:border-neutral-800 dark:bg-neutral-900">
+              <CardContent className="p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-sm text-neutral-500 dark:text-neutral-400">Lokalne notatki awaryjne</p>
+                    <p className="text-lg font-semibold">Wazne informacje</p>
+                    <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">
+                      Wlasne wpisy sa zapisane tylko na tym urzadzeniu.
+                    </p>
+                  </div>
+                  <Button
+                    size="sm"
+                    className="rounded-lg bg-neutral-950 hover:bg-neutral-800 dark:bg-orange-500 dark:hover:bg-orange-600"
+                    onClick={() => setShowAddImportantNote(true)}
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Dodaj
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            <div className="space-y-2">
+              {GENERAL_IMPORTANT_INFO.map((info) => (
+                <Card key={info.title} className="rounded-lg border-neutral-200 bg-white shadow-sm dark:border-neutral-800 dark:bg-neutral-900">
+                  <CardContent className="p-4">
+                    <div className="flex gap-3">
+                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300">
+                        <FileText className="h-4 w-4" />
+                      </div>
+                      <div>
+                        <p className="font-semibold">{info.title}</p>
+                        <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-400">{info.content}</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex items-center justify-between px-1">
+                <h2 className="font-semibold">Moje informacje</h2>
+                <Badge variant="outline">{importantNotes.length}</Badge>
+              </div>
+
+              {importantNotes.length === 0 ? (
+                <Card className="rounded-lg border-dashed p-6 text-center shadow-sm">
+                  <FileText className="h-12 w-12 mx-auto text-gray-300 mb-3" />
+                  <p className="text-gray-500">Brak wlasnych informacji</p>
+                  <p className="text-sm text-gray-400 mt-1">Dodaj np. alergie, kontakty lub instrukcje dla domownikow</p>
+                </Card>
+              ) : (
+                importantNotes.map((note) => (
+                  <Card key={note.id} className="rounded-lg border-neutral-200 bg-white shadow-sm dark:border-neutral-800 dark:bg-neutral-900">
+                    <CardContent className="p-4">
+                      <div className="flex items-start gap-3">
+                        <div className="flex-1 min-w-0">
+                          <p className="font-semibold break-words">{note.title}</p>
+                          <p className="mt-1 whitespace-pre-wrap break-words text-sm text-neutral-600 dark:text-neutral-400">{note.content}</p>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 shrink-0 text-neutral-400 hover:text-red-500"
+                          onClick={() => removeImportantNote(note.id)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))
+              )}
+            </div>
+          </div>
+        )}
+
         {view === 'expiring' && (
           <div className="space-y-2">
             {expiringItems.length === 0 ? (
@@ -1639,7 +1796,7 @@ export default function Page() {
       </main>
 
       <nav className="fixed bottom-3 left-3 right-3 z-50 rounded-lg border border-neutral-200 bg-white/95 p-1 shadow-lg backdrop-blur dark:border-neutral-800 dark:bg-neutral-900/95">
-        <div className="grid grid-cols-4 h-14 gap-1">
+        <div className="grid grid-cols-5 h-14 gap-1">
           <button
             className={`flex flex-col items-center justify-center rounded-md ${view === 'backpacks' ? 'bg-neutral-100 text-neutral-950 dark:bg-neutral-800 dark:text-white' : 'text-neutral-500'}`}
             onClick={() => { setView('backpacks'); setSelectedBackpackId(null); }}
@@ -1670,6 +1827,13 @@ export default function Page() {
               </span>
             )}
             <span className="text-[10px] mt-1">Koncza</span>
+          </button>
+          <button
+            className={`flex flex-col items-center justify-center rounded-md ${view === 'info' ? 'bg-neutral-100 text-neutral-950 dark:bg-neutral-800 dark:text-white' : 'text-neutral-500'}`}
+            onClick={() => setView('info')}
+          >
+            <FileText className="h-5 w-5" />
+            <span className="text-xs mt-1">Info</span>
           </button>
           <button
             className={`flex flex-col items-center justify-center rounded-md relative ${view === 'expired' ? 'bg-red-50 text-red-700 dark:bg-red-950/40 dark:text-red-300' : 'text-neutral-500'}`}
@@ -1954,6 +2118,46 @@ export default function Page() {
                 Dodaj
               </Button>
               <Button variant="outline" onClick={() => setShowAddShoppingItem(false)} className="h-12 rounded-xl">
+                Anuluj
+              </Button>
+            </div>
+          </div>
+        </SheetContent>
+      </Sheet>
+
+      <Sheet open={showAddImportantNote} onOpenChange={setShowAddImportantNote}>
+        <SheetContent side="bottom" className="rounded-t-3xl">
+          <SheetHeader>
+            <SheetTitle className="text-xl flex items-center gap-2">
+              <FileText className="h-5 w-5" />
+              Dodaj wazna informacje
+            </SheetTitle>
+          </SheetHeader>
+          <div className="space-y-4 mt-4">
+            <div>
+              <Label className="text-base">Tytul *</Label>
+              <Input
+                placeholder="np. Alergie, kontakt awaryjny"
+                value={newImportantNote.title}
+                onChange={(e) => setNewImportantNote({ ...newImportantNote, title: e.target.value })}
+                className="h-12 rounded-xl text-base"
+              />
+            </div>
+            <div>
+              <Label className="text-base">Tresc *</Label>
+              <Textarea
+                placeholder="Wpisz informacje, ktore maja byc dostepne w sytuacji awaryjnej..."
+                value={newImportantNote.content}
+                onChange={(e) => setNewImportantNote({ ...newImportantNote, content: e.target.value })}
+                className="min-h-32 rounded-xl"
+              />
+            </div>
+            <div className="flex gap-2 pt-2">
+              <Button onClick={addImportantNote} className="flex-1 h-12 rounded-xl bg-neutral-950 hover:bg-neutral-800 dark:bg-orange-500 dark:hover:bg-orange-600">
+                <Plus className="h-5 w-5 mr-2" />
+                Dodaj
+              </Button>
+              <Button variant="outline" onClick={() => setShowAddImportantNote(false)} className="h-12 rounded-xl">
                 Anuluj
               </Button>
             </div>
