@@ -1,7 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
 import { db } from '@/lib/db';
-import * as XLSX from 'xlsx';
+
+function csvValue(value: string | number | null | undefined) {
+  const text = String(value ?? '');
+  return `"${text.replace(/"/g, '""')}"`;
+}
+
+function csvRow(values: Array<string | number | null | undefined>) {
+  return values.map(csvValue).join(';');
+}
 
 export async function POST(request: NextRequest) {
   const user = await getCurrentUser();
@@ -24,7 +32,6 @@ export async function POST(request: NextRequest) {
       );
     }
     
-    // Sprawdź dostęp i pobierz dane
     const backpack = await db.backpack.findUnique({
       where: { id: backpackId },
       include: {
@@ -39,12 +46,11 @@ export async function POST(request: NextRequest) {
     
     if (!backpack) {
       return NextResponse.json(
-        { success: false, error: 'Plecak nie został znaleziony' },
+        { success: false, error: 'Plecak nie zostal znaleziony' },
         { status: 404 }
       );
     }
     
-    // Sprawdź dostęp
     const isOwner = backpack.userId === user.id;
     const shared = await db.sharedBackpack.findUnique({
       where: { backpackId_userId: { backpackId, userId: user.id } },
@@ -52,94 +58,68 @@ export async function POST(request: NextRequest) {
     
     if (!isOwner && !shared) {
       return NextResponse.json(
-        { success: false, error: 'Brak dostępu do tego plecaka' },
+        { success: false, error: 'Brak dostepu do tego plecaka' },
         { status: 403 }
       );
     }
     
-    // Kategorie po polsku
     const categoryLabels: Record<string, string> = {
       food: 'Jedzenie',
       water: 'Woda',
       medical: 'Apteczka',
-      tools: 'Narzędzia',
+      tools: 'Narzedzia',
       documents: 'Dokumenty',
       clothes: 'Ubrania',
       electronics: 'Elektronika',
       other: 'Inne',
     };
     
-    // Przygotuj dane do eksportu
-    const data = backpack.items.map(item => ({
-      'Nazwa': item.name,
-      'Kategoria': categoryLabels[item.category] || item.category,
-      'Ilość': item.quantity,
-      'Data ważności': item.expiryDate 
-        ? new Date(item.expiryDate).toLocaleDateString('pl-PL')
-        : '',
-      'Kod kreskowy': item.barcode || '',
-      'Notatki': item.notes || '',
-      'Dodano': new Date(item.createdAt).toLocaleDateString('pl-PL'),
-    }));
-    
-    // Dodaj wiersz podsumowania
-    data.push({
-      'Nazwa': 'RAZEM PRZEDMIOTÓW:',
-      'Kategoria': '',
-      'Ilość': backpack.items.reduce((sum, i) => sum + i.quantity, 0),
-      'Data ważności': '',
-      'Kod kreskowy': '',
-      'Notatki': '',
-      'Dodano': '',
-    });
-    
-    // Utwórz workbook
-    const wb = XLSX.utils.book_new();
-    
-    // Arkusz z przedmiotami
-    const ws = XLSX.utils.json_to_sheet(data);
-    
-    // Ustaw szerokości kolumn
-    ws['!cols'] = [
-      { wch: 30 }, // Nazwa
-      { wch: 12 }, // Kategoria
-      { wch: 8 },  // Ilość
-      { wch: 12 }, // Data ważności
-      { wch: 15 }, // Kod kreskowy
-      { wch: 40 }, // Notatki
-      { wch: 12 }, // Dodano
+    const rows = [
+      csvRow(['Nazwa', 'Kategoria', 'Ilosc', 'Data waznosci', 'Kod kreskowy', 'Notatki', 'Dodano']),
+      ...backpack.items.map((item) =>
+        csvRow([
+          item.name,
+          categoryLabels[item.category] || item.category,
+          item.quantity,
+          item.expiryDate ? new Date(item.expiryDate).toLocaleDateString('pl-PL') : '',
+          item.barcode || '',
+          item.notes || '',
+          new Date(item.createdAt).toLocaleDateString('pl-PL'),
+        ])
+      ),
+      csvRow([
+        'RAZEM PRZEDMIOTOW:',
+        '',
+        backpack.items.reduce((sum, item) => sum + item.quantity, 0),
+        '',
+        '',
+        '',
+        '',
+      ]),
+      '',
+      csvRow(['Informacje o plecaku', '']),
+      csvRow(['Nazwa plecaka', backpack.name]),
+      csvRow(['Opis', backpack.description || '']),
+      csvRow(['Wlasciciel', backpack.user.name || backpack.user.email]),
+      csvRow(['Data utworzenia', new Date(backpack.createdAt).toLocaleDateString('pl-PL')]),
+      csvRow(['Ostatnia aktualizacja', new Date(backpack.updatedAt).toLocaleDateString('pl-PL')]),
+      csvRow(['Liczba przedmiotow', backpack.items.length]),
+      csvRow(['Suma sztuk', backpack.items.reduce((sum, item) => sum + item.quantity, 0)]),
     ];
+
+    const csv = `\uFEFF${rows.join('\r\n')}`;
+    const filename = backpack.name.replace(/[^a-zA-Z0-9]/g, '_') || 'plecak';
     
-    XLSX.utils.book_append_sheet(wb, ws, 'Przedmioty');
-    
-    // Arkusz z informacjami o plecaku
-    const infoData = [
-      { 'Pole': 'Nazwa plecaka', 'Wartość': backpack.name },
-      { 'Pole': 'Opis', 'Wartość': backpack.description || '' },
-      { 'Pole': 'Właściciel', 'Wartość': backpack.user.name || backpack.user.email },
-      { 'Pole': 'Data utworzenia', 'Wartość': new Date(backpack.createdAt).toLocaleDateString('pl-PL') },
-      { 'Pole': 'Ostatnia aktualizacja', 'Wartość': new Date(backpack.updatedAt).toLocaleDateString('pl-PL') },
-      { 'Pole': 'Liczba przedmiotów', 'Wartość': backpack.items.length },
-      { 'Pole': 'Suma sztuk', 'Wartość': backpack.items.reduce((sum, i) => sum + i.quantity, 0) },
-    ];
-    
-    const wsInfo = XLSX.utils.json_to_sheet(infoData);
-    wsInfo['!cols'] = [{ wch: 20 }, { wch: 50 }];
-    XLSX.utils.book_append_sheet(wb, wsInfo, 'Informacje');
-    
-    // Wygeneruj plik
-    const buffer = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
-    
-    return new NextResponse(buffer, {
+    return new NextResponse(csv, {
       headers: {
-        'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        'Content-Disposition': `attachment; filename="${backpack.name.replace(/[^a-zA-Z0-9]/g, '_')}.xlsx"`,
+        'Content-Type': 'text/csv; charset=utf-8',
+        'Content-Disposition': `attachment; filename="${filename}.csv"`,
       },
     });
   } catch (error) {
-    console.error('Export Excel error:', error);
+    console.error('Export CSV error:', error);
     return NextResponse.json(
-      { success: false, error: 'Wystąpił błąd podczas eksportu Excel' },
+      { success: false, error: 'Wystapil blad podczas eksportu CSV' },
       { status: 500 }
     );
   }

@@ -1140,11 +1140,11 @@ export default function Page() {
     }
   };
 
-  const handleExportExcel = async () => {
+  const handleExportCsv = async () => {
     if (!selectedBackpackId) return;
     try {
-      await exportApi.exportExcel(selectedBackpackId);
-      toast({ title: 'Pobrano Excel' });
+      await exportApi.exportCsv(selectedBackpackId);
+      toast({ title: 'Pobrano CSV' });
     } catch {
       toast({ title: 'Blad', description: 'Eksport nieudany', variant: 'destructive' });
     }
@@ -1597,9 +1597,9 @@ export default function Page() {
                 <Download className="h-5 w-5 mr-2" />
                 PDF
               </Button>
-              <Button variant="outline" className="flex-1 h-12 rounded-xl" onClick={handleExportExcel}>
+              <Button variant="outline" className="flex-1 h-12 rounded-xl" onClick={handleExportCsv}>
                 <Download className="h-5 w-5 mr-2" />
-                Excel
+                CSV
               </Button>
             </div>
           </div>

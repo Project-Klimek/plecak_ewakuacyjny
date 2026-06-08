@@ -143,7 +143,7 @@ export const exportApi = {
     URL.revokeObjectURL(url);
   },
   
-  async exportExcel(backpackId: string): Promise<void> {
+  async exportCsv(backpackId: string): Promise<void> {
     const response = await fetch(`${API_BASE}/export/excel`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -154,7 +154,7 @@ export const exportApi = {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'plecak.xlsx';
+    a.download = 'plecak.csv';
     a.click();
     URL.revokeObjectURL(url);
   },
