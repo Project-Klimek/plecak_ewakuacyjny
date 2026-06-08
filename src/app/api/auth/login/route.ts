@@ -25,7 +25,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const body = await request.json();
+    let body: unknown;
+    try {
+      body = await request.json();
+    } catch {
+      return NextResponse.json(
+        { success: false, error: 'Nieprawidlowy format danych' },
+        { status: 400 }
+      );
+    }
+
     const validatedData = loginSchema.parse(body);
     
     const result = await authenticateUser(validatedData.email, validatedData.password);
