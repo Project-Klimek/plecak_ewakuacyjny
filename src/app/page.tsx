@@ -47,7 +47,7 @@ import {
   Backpack, Plus, Trash2, LogOut,
   Utensils, Droplet, Heart, Wrench, FileText, Shirt, Smartphone, Package,
   Camera, Download, Moon, Sun, RefreshCw, 
-  ChevronRight, AlertTriangle, X, Check, Search, Minus, ShoppingCart, Menu
+  ChevronRight, AlertTriangle, X, Check, Search, Minus, ShoppingCart, Menu, Printer
 } from 'lucide-react';
 
 const categoryIcons: Record<ItemCategory, React.ReactNode> = {
@@ -947,6 +947,143 @@ export default function Page() {
     toast({ title: 'Wyeksportowano', description: 'Lista zakupow pobrana' });
   };
 
+  const printEmergencyReport = () => {
+    const escapeHtml = (value: unknown) => String(value ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+
+    const formatDate = (value: Date | string | null | undefined) => {
+      if (!value) return '';
+      const date = new Date(value);
+      return Number.isNaN(date.getTime()) ? '' : date.toLocaleDateString('pl-PL');
+    };
+
+    const categoryLabel = (category: ItemCategory | string) =>
+      ITEM_CATEGORIES.find(cat => cat.value === category)?.label || String(category);
+
+    const backpackSections = backpacks.map((backpack) => {
+      const audience = getBackpackAudienceMeta(backpack.icon);
+      const backpackItemsForPrint = items
+        .filter(item => item.backpackId === backpack.id)
+        .sort((a, b) => a.category.localeCompare(b.category) || a.name.localeCompare(b.name));
+
+      const rows = backpackItemsForPrint.length > 0
+        ? backpackItemsForPrint.map(item => `
+          <tr>
+            <td>${escapeHtml(item.name)}</td>
+            <td>${escapeHtml(categoryLabel(item.category))}</td>
+            <td>${escapeHtml(item.quantity)}</td>
+            <td>${escapeHtml(formatDate(item.expiryDate))}</td>
+            <td>${escapeHtml(item.notes)}</td>
+          </tr>
+        `).join('')
+        : '<tr><td colspan="5" class="muted">Brak przedmiotow</td></tr>';
+
+      return `
+        <section>
+          <h2>${escapeHtml(backpack.name)}</h2>
+          <p class="muted">${escapeHtml(audience.label)}${backpack.description ? ` | ${escapeHtml(backpack.description)}` : ''}</p>
+          <table>
+            <thead>
+              <tr><th>Przedmiot</th><th>Kategoria</th><th>Ilosc</th><th>Data</th><th>Notatki</th></tr>
+            </thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </section>
+      `;
+    }).join('');
+
+    const shoppingRows = shoppingList.length > 0
+      ? shoppingList.map(item => `
+        <tr>
+          <td>${item.checked ? '[x]' : '[ ]'}</td>
+          <td>${escapeHtml(item.name)}</td>
+          <td>${escapeHtml(categoryLabel(item.category))}</td>
+          <td>${escapeHtml(item.quantity)}</td>
+        </tr>
+      `).join('')
+      : '<tr><td colspan="4" class="muted">Lista zakupow jest pusta</td></tr>';
+
+    const generalInfo = GENERAL_IMPORTANT_INFO.map(info => `
+      <article class="note">
+        <h3>${escapeHtml(info.title)}</h3>
+        <p>${escapeHtml(info.content)}</p>
+      </article>
+    `).join('');
+
+    const personalInfo = importantNotes.length > 0
+      ? importantNotes.map(note => `
+        <article class="note">
+          <h3>${escapeHtml(note.title)}</h3>
+          <p>${escapeHtml(note.content)}</p>
+        </article>
+      `).join('')
+      : '<p class="muted">Brak wlasnych informacji.</p>';
+
+    const reportHtml = `<!doctype html>
+      <html lang="pl">
+        <head>
+          <meta charset="utf-8" />
+          <title>Raport awaryjny</title>
+          <style>
+            body { font-family: Arial, sans-serif; color: #111; margin: 24px; line-height: 1.35; }
+            h1 { font-size: 24px; margin: 0 0 4px; }
+            h2 { font-size: 18px; margin: 24px 0 4px; border-bottom: 1px solid #ddd; padding-bottom: 6px; }
+            h3 { font-size: 15px; margin: 0 0 4px; }
+            .muted { color: #666; }
+            .meta { margin-bottom: 24px; }
+            table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 12px; }
+            th, td { border: 1px solid #ddd; padding: 6px; vertical-align: top; text-align: left; }
+            th { background: #f3f4f6; }
+            .note { border: 1px solid #ddd; padding: 10px; margin: 8px 0; border-radius: 6px; }
+            @media print {
+              body { margin: 12mm; }
+              section { break-inside: avoid; }
+              .note { break-inside: avoid; }
+            }
+          </style>
+        </head>
+        <body>
+          <h1>Raport awaryjny</h1>
+          <p class="meta muted">Wygenerowano: ${escapeHtml(new Date().toLocaleString('pl-PL'))}</p>
+          <section>
+            <h2>Plecaki i przedmioty</h2>
+            ${backpackSections || '<p class="muted">Brak plecakow.</p>'}
+          </section>
+          <section>
+            <h2>Lista zakupow</h2>
+            <table>
+              <thead><tr><th>Status</th><th>Pozycja</th><th>Kategoria</th><th>Ilosc</th></tr></thead>
+              <tbody>${shoppingRows}</tbody>
+            </table>
+          </section>
+          <section>
+            <h2>Wazne informacje ogolne</h2>
+            ${generalInfo}
+          </section>
+          <section>
+            <h2>Moje wazne informacje</h2>
+            ${personalInfo}
+          </section>
+        </body>
+      </html>`;
+
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      toast({ title: 'Blad', description: 'Przegladarka zablokowala okno drukowania', variant: 'destructive' });
+      return;
+    }
+
+    printWindow.document.open();
+    printWindow.document.write(reportHtml);
+    printWindow.document.close();
+    printWindow.focus();
+    printWindow.print();
+  };
+
   const addImportantNote = () => {
     if (!newImportantNote.title.trim() || !newImportantNote.content.trim()) return;
 
@@ -1195,6 +1332,10 @@ export default function Page() {
                     Dodaj informacje
                   </DropdownMenuItem>
                 )}
+                <DropdownMenuItem onSelect={printEmergencyReport}>
+                  <Printer className="h-4 w-4" />
+                  Drukuj raport
+                </DropdownMenuItem>
                 {!isOffline && pendingSyncCount > 0 && (
                   <DropdownMenuItem onSelect={handleManualSync} disabled={isSyncing}>
                     <RefreshCw className={`h-4 w-4 ${isSyncing ? 'animate-spin' : ''}`} />
