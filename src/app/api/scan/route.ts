@@ -3,6 +3,8 @@ import { getCurrentUser } from '@/lib/auth';
 import ZAI from 'z-ai-web-dev-sdk';
 import type { ScanResult } from '@/types';
 
+const MAX_IMAGE_LENGTH = 6_000_000;
+
 export async function POST(request: NextRequest) {
   const user = await getCurrentUser();
   
@@ -17,9 +19,23 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { image } = body;
     
-    if (!image) {
+    if (typeof image !== 'string' || !image.trim()) {
       return NextResponse.json(
         { success: false, error: 'Brak obrazu do analizy' },
+        { status: 400 }
+      );
+    }
+
+    if (image.length > MAX_IMAGE_LENGTH) {
+      return NextResponse.json(
+        { success: false, error: 'Obraz jest za duzy do analizy' },
+        { status: 413 }
+      );
+    }
+
+    if (image.startsWith('data:') && !image.startsWith('data:image/')) {
+      return NextResponse.json(
+        { success: false, error: 'Nieprawidlowy format obrazu' },
         { status: 400 }
       );
     }

@@ -34,6 +34,47 @@ function pickItemUpdateData(data: Record<string, unknown>) {
   };
 }
 
+async function userCanEditBackpack(backpackId: string, userId: string) {
+  const backpack = await db.backpack.findUnique({
+    where: { id: backpackId },
+    include: {
+      sharedWith: {
+        where: { userId },
+        select: { permission: true },
+      },
+    },
+  });
+
+  if (!backpack) return false;
+  if (backpack.userId === userId) return true;
+
+  return backpack.sharedWith.some((share) => share.permission === 'edit');
+}
+
+async function getEditableItem(itemId: string, userId: string) {
+  const item = await db.item.findUnique({
+    where: { id: itemId },
+    include: {
+      backpack: {
+        include: {
+          sharedWith: {
+            where: { userId },
+            select: { permission: true },
+          },
+        },
+      },
+    },
+  });
+
+  if (!item) return null;
+
+  const canEdit =
+    item.backpack.userId === userId ||
+    item.backpack.sharedWith.some((share) => share.permission === 'edit');
+
+  return canEdit ? item : null;
+}
+
 // GET - Pobierz dane do synchronizacji
 export async function GET() {
   const user = await getCurrentUser();
@@ -160,11 +201,9 @@ export async function POST(request: NextRequest) {
             
             if (!existing) {
               // Sprawdź dostęp do plecaka
-              const backpack = await db.backpack.findUnique({
-                where: { id: change.data.backpackId },
-              });
+              const canEditBackpack = await userCanEditBackpack(change.data.backpackId, user.id);
               
-              if (backpack && backpack.userId === user.id) {
+              if (canEditBackpack) {
                 await db.item.create({
                   data: {
                     id: change.data.id,
@@ -174,6 +213,7 @@ export async function POST(request: NextRequest) {
                     expiryDate: change.data.expiryDate ? new Date(change.data.expiryDate) : null,
                     barcode: change.data.barcode,
                     notes: change.data.notes,
+                    imageUrl: change.data.imageUrl,
                     backpackId: change.data.backpackId,
                   },
                 });
@@ -184,12 +224,9 @@ export async function POST(request: NextRequest) {
           }
           
           case 'update_item': {
-            const item = await db.item.findUnique({
-              where: { id: change.data.id },
-              include: { backpack: true },
-            });
+            const item = await getEditableItem(change.data.id, user.id);
             
-            if (item && item.backpack.userId === user.id) {
+            if (item) {
               await db.item.update({
                 where: { id: change.data.id },
                 data: pickItemUpdateData(change.data),
@@ -200,12 +237,9 @@ export async function POST(request: NextRequest) {
           }
           
           case 'delete_item': {
-            const item = await db.item.findUnique({
-              where: { id: change.data.id },
-              include: { backpack: true },
-            });
+            const item = await getEditableItem(change.data.id, user.id);
             
-            if (item && item.backpack.userId === user.id) {
+            if (item) {
               await db.item.delete({
                 where: { id: change.data.id },
               });

@@ -1077,6 +1077,7 @@ export default function Page() {
       return;
     }
 
+    printWindow.opener = null;
     printWindow.document.open();
     printWindow.document.write(reportHtml);
     printWindow.document.close();

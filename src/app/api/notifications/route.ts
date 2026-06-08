@@ -66,7 +66,7 @@ export async function POST(request: NextRequest) {
   }
 
   if (notificationId) {
-    await db.notification.update({
+    const result = await db.notification.updateMany({
       where: {
         id: notificationId,
         userId: user.id,
@@ -74,7 +74,7 @@ export async function POST(request: NextRequest) {
       data: { isRead: true },
     });
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ success: result.count > 0 });
   }
 
   return NextResponse.json(
