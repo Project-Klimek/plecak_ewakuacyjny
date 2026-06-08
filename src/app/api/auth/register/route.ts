@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { hashPassword, createSession } from '@/lib/auth';
+import { checkRateLimit, resetRateLimit } from '@/lib/rate-limit';
 import { z } from 'zod';
 
 const registerSchema = z.object({
@@ -11,6 +12,21 @@ const registerSchema = z.object({
 
 export async function POST(request: NextRequest) {
   try {
+    const limit = checkRateLimit(request, 'auth:register', {
+      max: 5,
+      windowMs: 15 * 60 * 1000,
+    });
+
+    if (!limit.allowed) {
+      return NextResponse.json(
+        { success: false, error: 'Za duzo prob rejestracji. Sprobuj ponownie za kilka minut.' },
+        {
+          status: 429,
+          headers: { 'Retry-After': String(limit.retryAfterSeconds) },
+        }
+      );
+    }
+
     const body = await request.json();
     const validatedData = registerSchema.parse(body);
     
@@ -47,6 +63,7 @@ export async function POST(request: NextRequest) {
     
     // Create session
     await createSession(user.id, user.email);
+    resetRateLimit(request, 'auth:register');
     
     return NextResponse.json({
       success: true,
