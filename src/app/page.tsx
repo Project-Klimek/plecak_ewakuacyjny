@@ -131,7 +131,7 @@ type StarterChecklistItem = {
   notes: string;
 };
 
-const STARTER_CHECKLIST: StarterChecklistItem[] = [
+const BASE_STARTER_CHECKLIST: StarterChecklistItem[] = [
   { name: 'Woda butelkowana 1,5 l', category: 'water', quantity: 3, notes: 'Minimum 9 l na osobe na 72h. Do plecaka wez 2-3 butelki 1,5 l na start; reszte transportuj osobno, jesli masz samochod.' },
   { name: 'Tabletki do uzdatniania wody', category: 'water', quantity: 1, notes: 'Do awaryjnego uzdatniania wody.' },
   { name: 'Konserwy', category: 'food', quantity: 3, notes: 'Mieso, ryby, gulasz lub podobne gotowe jedzenie.' },
@@ -172,6 +172,18 @@ const STARTER_CHECKLIST: StarterChecklistItem[] = [
   { name: 'Pieluchy jednorazowe', category: 'other', quantity: 20, notes: 'Dla rodzin z dziecmi: ok. 15-20 sztuk na 3 dni.' },
   { name: 'Chusteczki nawilzane', category: 'medical', quantity: 1, notes: 'Dla dzieci i higieny w drodze.' },
   { name: 'Ulubiona zabawka lub pluszak', category: 'other', quantity: 1, notes: 'Pomaga dziecku w uspokojeniu.' },
+];
+
+const AUDIENCE_STARTER_ADDITIONS: Record<BackpackAudience, StarterChecklistItem[]> = {
+  adult: [],
+  child: [],
+  pet: [],
+  dependent: [],
+};
+
+const getStarterChecklistForAudience = (audience: BackpackAudience) => [
+  ...BASE_STARTER_CHECKLIST,
+  ...AUDIENCE_STARTER_ADDITIONS[audience],
 ];
 
 export default function Page() {
@@ -550,9 +562,10 @@ export default function Page() {
     setShoppingList(prev => [...prev, ...shoppingItems]);
   };
 
-  const createStarterChecklistItems = async (backpackId: string, mode: 'server' | 'queued') => {
+  const createStarterChecklistItems = async (backpackId: string, audience: BackpackAudience, mode: 'server' | 'queued') => {
     const now = new Date();
-    const localItems: Item[] = STARTER_CHECKLIST.map((template) => ({
+    const audienceLabel = backpackAudiences.find(item => item.value === audience)?.label || 'Dorosly';
+    const localItems: Item[] = getStarterChecklistForAudience(audience).map((template) => ({
       id: generateId(),
       name: template.name,
       quantity: template.quantity,
@@ -560,7 +573,7 @@ export default function Page() {
       backpackId,
       expiryDate: null,
       barcode: null,
-      notes: template.notes,
+      notes: `[${audienceLabel}] ${template.notes}`,
       imageUrl: null,
       createdAt: now,
       updatedAt: now,
@@ -611,11 +624,12 @@ export default function Page() {
   const handleCreateBackpack = async () => {
     if (!newBackpack.name.trim()) return;
     const shouldAddStarterChecklist = includeStarterChecklist;
+    const selectedAudience = newBackpack.audience;
     const backpackPayload = {
       name: newBackpack.name,
       description: newBackpack.description,
       color: newBackpack.color,
-      icon: `${AUDIENCE_ICON_PREFIX}${newBackpack.audience}`,
+      icon: `${AUDIENCE_ICON_PREFIX}${selectedAudience}`,
     };
     
     const localBackpack: Backpack = {
@@ -635,7 +649,7 @@ export default function Page() {
       await saveBackpackLocal(localBackpack);
       await queueOfflineChange('create_backpack', localBackpack as unknown as Record<string, unknown>);
       if (shouldAddStarterChecklist) {
-        await createStarterChecklistItems(localBackpack.id, 'queued');
+        await createStarterChecklistItems(localBackpack.id, selectedAudience, 'queued');
       }
       setShowAddBackpack(false);
       setNewBackpack({ name: '', description: '', color: '#f97316', audience: 'adult' });
@@ -667,7 +681,7 @@ export default function Page() {
         addBackpack(response.data);
         await saveBackpackLocal(response.data);
         if (shouldAddStarterChecklist) {
-          await createStarterChecklistItems(response.data.id, 'server');
+          await createStarterChecklistItems(response.data.id, selectedAudience, 'server');
         }
         toast({
           title: 'Sukces',
@@ -678,14 +692,14 @@ export default function Page() {
       } else {
         await queueOfflineChange('create_backpack', localBackpack as unknown as Record<string, unknown>);
         if (shouldAddStarterChecklist) {
-          await createStarterChecklistItems(localBackpack.id, 'queued');
+          await createStarterChecklistItems(localBackpack.id, selectedAudience, 'queued');
         }
         toast({ title: 'Sukces', description: 'Plecak utworzony lokalnie, zsynchronizuje sie pozniej' });
       }
     } catch {
       await queueOfflineChange('create_backpack', localBackpack as unknown as Record<string, unknown>);
       if (shouldAddStarterChecklist) {
-        await createStarterChecklistItems(localBackpack.id, 'queued');
+        await createStarterChecklistItems(localBackpack.id, selectedAudience, 'queued');
       }
       toast({ title: 'Sukces', description: 'Plecak utworzony lokalnie (offline)' });
     }
@@ -1747,7 +1761,7 @@ export default function Page() {
                   Dodaj checkliste 72h
                 </Label>
                 <p className="text-sm text-neutral-500 dark:text-neutral-400">
-                  Utworzy podstawowe pozycje w plecaku i doda je do listy zakupow do odhaczenia.
+                  Utworzy bazowa liste 72h dla wybranego profilu i doda ja do zakupow do odhaczenia.
                 </p>
               </div>
             </div>
