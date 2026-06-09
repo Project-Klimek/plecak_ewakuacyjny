@@ -998,31 +998,53 @@ export default function Page() {
     const categoryLabel = (category: ItemCategory | string) =>
       ITEM_CATEGORIES.find(cat => cat.value === category)?.label || String(category);
 
-    const backpackSections = backpacks.map((backpack) => {
+    const reportBackpacks = [...backpacks, ...sharedBackpacks];
+    const totalQuantity = items.reduce((sum, item) => sum + item.quantity, 0);
+    const openShoppingCount = shoppingList.filter(item => !item.checked).length;
+    const checkedShoppingCount = shoppingList.filter(item => item.checked).length;
+
+    const itemStatus = (value: Date | string | null | undefined) => {
+      if (!value) return { label: 'Bez daty', className: 'status-neutral' };
+      const now = new Date();
+      now.setHours(0, 0, 0, 0);
+      const date = new Date(value);
+      if (Number.isNaN(date.getTime())) return { label: 'Bez daty', className: 'status-neutral' };
+      const days = Math.ceil((date.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+      if (days < 0) return { label: 'Po terminie', className: 'status-danger' };
+      if (days <= 7) return { label: `Do ${days} dni`, className: 'status-warning' };
+      return { label: 'OK', className: 'status-ok' };
+    };
+
+    const backpackSections = reportBackpacks.map((backpack) => {
       const audience = getBackpackAudienceMeta(backpack.icon);
+      const isShared = sharedBackpacks.some(shared => shared.id === backpack.id);
       const backpackItemsForPrint = items
         .filter(item => item.backpackId === backpack.id)
         .sort((a, b) => a.category.localeCompare(b.category) || a.name.localeCompare(b.name));
 
       const rows = backpackItemsForPrint.length > 0
-        ? backpackItemsForPrint.map(item => `
+        ? backpackItemsForPrint.map(item => {
+          const status = itemStatus(item.expiryDate);
+          return `
           <tr>
             <td>${escapeHtml(item.name)}</td>
             <td>${escapeHtml(categoryLabel(item.category))}</td>
             <td>${escapeHtml(item.quantity)}</td>
             <td>${escapeHtml(formatDate(item.expiryDate))}</td>
+            <td><span class="status ${status.className}">${escapeHtml(status.label)}</span></td>
             <td>${escapeHtml(item.notes)}</td>
           </tr>
-        `).join('')
-        : '<tr><td colspan="5" class="muted">Brak przedmiotow</td></tr>';
+        `;
+        }).join('')
+        : '<tr><td colspan="6" class="muted">Brak przedmiotow</td></tr>';
 
       return `
         <section>
           <h2>${escapeHtml(backpack.name)}</h2>
-          <p class="muted">${escapeHtml(audience.label)}${backpack.description ? ` | ${escapeHtml(backpack.description)}` : ''}</p>
+          <p class="muted">${escapeHtml(audience.label)}${isShared ? ' | Udostepniony' : ''}${backpack.description ? ` | ${escapeHtml(backpack.description)}` : ''}</p>
           <table>
             <thead>
-              <tr><th>Przedmiot</th><th>Kategoria</th><th>Ilosc</th><th>Data</th><th>Notatki</th></tr>
+              <tr><th>Przedmiot</th><th>Kategoria</th><th>Ilosc</th><th>Data</th><th>Status</th><th>Notatki</th></tr>
             </thead>
             <tbody>${rows}</tbody>
           </table>
@@ -1069,26 +1091,43 @@ export default function Page() {
             h3 { font-size: 15px; margin: 0 0 4px; }
             .muted { color: #666; }
             .meta { margin-bottom: 24px; }
+            .summary { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 16px 0 22px; }
+            .summary-item { border: 1px solid #d1d5db; border-radius: 6px; padding: 10px; }
+            .summary-value { display: block; font-size: 20px; font-weight: 700; }
+            .summary-label { color: #555; font-size: 11px; text-transform: uppercase; }
             table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 12px; }
             th, td { border: 1px solid #ddd; padding: 6px; vertical-align: top; text-align: left; }
             th { background: #f3f4f6; }
             .note { border: 1px solid #ddd; padding: 10px; margin: 8px 0; border-radius: 6px; }
+            .status { display: inline-block; border-radius: 999px; padding: 2px 7px; font-size: 11px; font-weight: 700; }
+            .status-ok { background: #dcfce7; color: #166534; }
+            .status-warning { background: #fef3c7; color: #92400e; }
+            .status-danger { background: #fee2e2; color: #991b1b; }
+            .status-neutral { background: #f3f4f6; color: #4b5563; }
             @media print {
               body { margin: 12mm; }
               section { break-inside: avoid; }
               .note { break-inside: avoid; }
+              .summary { grid-template-columns: repeat(4, 1fr); }
             }
           </style>
         </head>
         <body>
           <h1>Raport awaryjny</h1>
-          <p class="meta muted">Wygenerowano: ${escapeHtml(new Date().toLocaleString('pl-PL'))}</p>
+          <p class="meta muted">Wygenerowano: ${escapeHtml(new Date().toLocaleString('pl-PL'))}${user ? ` | ${escapeHtml(user.name || user.email)}` : ''}</p>
+          <div class="summary">
+            <div class="summary-item"><span class="summary-value">${escapeHtml(reportBackpacks.length)}</span><span class="summary-label">Plecaki</span></div>
+            <div class="summary-item"><span class="summary-value">${escapeHtml(items.length)}</span><span class="summary-label">Pozycje</span></div>
+            <div class="summary-item"><span class="summary-value">${escapeHtml(totalQuantity)}</span><span class="summary-label">Sztuki lacznie</span></div>
+            <div class="summary-item"><span class="summary-value">${escapeHtml(openShoppingCount)}</span><span class="summary-label">Do kupienia</span></div>
+          </div>
           <section>
             <h2>Plecaki i przedmioty</h2>
             ${backpackSections || '<p class="muted">Brak plecakow.</p>'}
           </section>
           <section>
             <h2>Lista zakupow</h2>
+            <p class="muted">Do kupienia: ${escapeHtml(openShoppingCount)} | Odhaczone: ${escapeHtml(checkedShoppingCount)}</p>
             <table>
               <thead><tr><th>Status</th><th>Pozycja</th><th>Kategoria</th><th>Ilosc</th></tr></thead>
               <tbody>${shoppingRows}</tbody>
