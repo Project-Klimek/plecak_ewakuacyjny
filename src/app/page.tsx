@@ -310,6 +310,13 @@ export default function Page() {
     return expDate < new Date();
   });
 
+  const getMissingQuantityForItem = useCallback((item: Item) => {
+    const desiredQuantity = item.desiredQuantity ?? null;
+    if (desiredQuantity === null) return 0;
+    return Math.max(0, desiredQuantity - item.quantity);
+  }, []);
+
+  const missingChecklistItems = filteredItems.filter(item => getMissingQuantityForItem(item) > 0);
   const activeShoppingCount = shoppingList.filter(item => !item.checked).length;
   const checkedShoppingCount = shoppingList.length - activeShoppingCount;
   const shoppingItemsByCategory = shoppingList.reduce((acc, item) => {
@@ -317,17 +324,11 @@ export default function Page() {
     acc[item.category].push(item);
     return acc;
   }, {} as Record<ItemCategory, ShoppingItem[]>);
-  const totalIssueCount = expiringItems.length + expiredItems.length;
+  const totalIssueCount = expiringItems.length + expiredItems.length + missingChecklistItems.length;
 
   const categoryItems = selectedCategory 
     ? backpackItems.filter(i => i.category === selectedCategory)
     : [];
-
-  const getMissingQuantityForItem = useCallback((item: Item) => {
-    const desiredQuantity = item.desiredQuantity ?? null;
-    if (desiredQuantity === null) return 0;
-    return Math.max(0, desiredQuantity - item.quantity);
-  }, []);
 
   const getShoppingSourceForItem = useCallback((item: Item): ShoppingItem['source'] | null => {
     if (getMissingQuantityForItem(item) > 0) return 'missing';
@@ -1683,7 +1684,8 @@ export default function Page() {
                   const itemCount = items.filter(i => i.backpackId === backpack.id).length;
                   const backpackExpiredCount = expiredItems.filter(i => i.backpackId === backpack.id).length;
                   const backpackExpiringCount = expiringItems.filter(i => i.backpackId === backpack.id).length;
-                  const backpackIssueCount = backpackExpiredCount + backpackExpiringCount;
+                  const backpackMissingCount = missingChecklistItems.filter(i => i.backpackId === backpack.id).length;
+                  const backpackIssueCount = backpackExpiredCount + backpackExpiringCount + backpackMissingCount;
                   const audienceMeta = getBackpackAudienceMeta(backpack.icon);
                   const isDeleting = deleteConfirm === backpack.id;
                   
