@@ -2,8 +2,8 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { useAppStore } from '@/store';
-import { authApi, backpacksApi, itemsApi, scanApi, exportApi, notificationsApi, syncApi } from '@/lib/api';
-import type { Backpack, Item, ItemCategory } from '@/types';
+import { authApi, backpacksApi, itemsApi, scanApi, exportApi, notificationsApi, importantInfoApi, syncApi } from '@/lib/api';
+import type { Backpack, Item, ItemCategory, ImportantInfo } from '@/types';
 import { ITEM_CATEGORIES } from '@/types';
 import {
   saveBackpackLocal,
@@ -105,12 +105,10 @@ interface ShoppingItem {
   addedAt: string;
 }
 
-interface ImportantNote {
-  id: string;
-  title: string;
-  content: string;
-  createdAt: string;
-}
+type ImportantNote = Pick<ImportantInfo, 'id' | 'title' | 'content' | 'createdAt'> & {
+  userId?: string;
+  updatedAt?: Date | string;
+};
 
 const SHOPPING_LIST_KEY = 'shoppingList';
 const SHOPPING_IGNORE_KEY = 'shoppingIgnoredItemIds';
@@ -514,9 +512,10 @@ export default function Page() {
 
   const loadData = async () => {
     try {
-      const [backpacksRes, notifRes] = await Promise.all([
+      const [backpacksRes, notifRes, importantInfoRes] = await Promise.all([
         backpacksApi.getAll(),
         notificationsApi.getAll(),
+        importantInfoApi.getAll(),
       ]);
       
       if (backpacksRes.success && backpacksRes.data) {
@@ -530,6 +529,40 @@ export default function Page() {
       if (notifRes.success && notifRes.data) {
         setNotifications(notifRes.data.notifications || []);
         setUnreadNotifications(notifRes.data.unreadCount || 0);
+      }
+
+      if (importantInfoRes.success && importantInfoRes.data) {
+        let notes = importantInfoRes.data;
+        const savedNotes = localStorage.getItem(IMPORTANT_INFO_KEY);
+
+        if (savedNotes) {
+          try {
+            const localNotes = JSON.parse(savedNotes) as ImportantNote[];
+            const existing = new Set(notes.map(note => `${note.title.trim()}|${note.content.trim()}`));
+            const notesToMigrate = localNotes.filter(note =>
+              note?.title?.trim() &&
+              note?.content?.trim() &&
+              !existing.has(`${note.title.trim()}|${note.content.trim()}`)
+            );
+
+            if (notesToMigrate.length > 0) {
+              const migrated = [];
+              for (const note of notesToMigrate) {
+                const response = await importantInfoApi.create({
+                  title: note.title.trim(),
+                  content: note.content.trim(),
+                });
+                if (response.success && response.data) migrated.push(response.data);
+              }
+              notes = [...migrated, ...notes];
+            }
+          } catch (error) {
+            console.error('Failed to migrate important notes:', error);
+          }
+        }
+
+        setImportantNotes(notes);
+        setInfoStorageLoaded(true);
       }
     } catch (error) {
       console.error('Failed to load data from server:', error);
@@ -579,6 +612,7 @@ export default function Page() {
       const response = await authApi.register(registerForm.email, registerForm.password, registerForm.name);
       if (response.success && response.user) {
         setUser(response.user);
+        await loadData();
         setRegisterForm({ email: '', password: '', name: '' });
       } else {
         toast({ title: 'Blad', description: response.error || 'Nie udalo sie zarejestrowac', variant: 'destructive' });
@@ -1085,25 +1119,73 @@ export default function Page() {
     printWindow.print();
   };
 
-  const addImportantNote = () => {
+  const addImportantNote = async () => {
     if (!newImportantNote.title.trim() || !newImportantNote.content.trim()) return;
 
-    const note: ImportantNote = {
+    const localNote: ImportantNote = {
       id: generateId(),
       title: newImportantNote.title.trim(),
       content: newImportantNote.content.trim(),
       createdAt: new Date().toISOString(),
     };
 
-    setImportantNotes(prev => [note, ...prev]);
     setNewImportantNote({ title: '', content: '' });
     setShowAddImportantNote(false);
-    toast({ title: 'Dodano', description: 'Informacja zostala zapisana lokalnie' });
+
+    if (!isBrowserOnline()) {
+      setImportantNotes(prev => [localNote, ...prev]);
+      toast({ title: 'Dodano lokalnie', description: 'Informacja zapisze sie na serwerze po synchronizacji' });
+      return;
+    }
+
+    try {
+      const response = await importantInfoApi.create({
+        title: localNote.title,
+        content: localNote.content,
+      });
+
+      if (response.success && response.data) {
+        setImportantNotes(prev => [response.data!, ...prev]);
+        toast({ title: 'Dodano', description: 'Informacja zostala zapisana' });
+      } else {
+        setImportantNotes(prev => [localNote, ...prev]);
+        toast({ title: 'Dodano lokalnie', description: response.error || 'Serwer zapisze informacje pozniej' });
+      }
+    } catch {
+      setImportantNotes(prev => [localNote, ...prev]);
+      toast({ title: 'Dodano lokalnie', description: 'Informacja zapisze sie na serwerze pozniej' });
+    }
   };
 
-  const removeImportantNote = (id: string) => {
+  const removeImportantNote = async (id: string) => {
+    const noteToRemove = importantNotes.find(note => note.id === id);
+
+    if (!isBrowserOnline()) {
+      if (noteToRemove && !noteToRemove.userId) {
+        setImportantNotes(prev => prev.filter(note => note.id !== id));
+        toast({ title: 'Usunieto', description: 'Lokalna informacja zostala usunieta' });
+        return;
+      }
+
+      toast({ title: 'Offline', description: 'Polacz sie z internetem, aby usunac informacje' });
+      return;
+    }
+
+    const previousNotes = importantNotes;
     setImportantNotes(prev => prev.filter(note => note.id !== id));
-    toast({ title: 'Usunieto', description: 'Informacja zostala usunieta' });
+
+    try {
+      const response = await importantInfoApi.delete(id);
+      if (response.success) {
+        toast({ title: 'Usunieto', description: 'Informacja zostala usunieta' });
+      } else {
+        setImportantNotes(previousNotes);
+        toast({ title: 'Blad', description: response.error || 'Nie udalo sie usunac informacji', variant: 'destructive' });
+      }
+    } catch {
+      setImportantNotes(previousNotes);
+      toast({ title: 'Blad', description: 'Nie udalo sie usunac informacji', variant: 'destructive' });
+    }
   };
 
   const handleScan = useCallback(async (file: File) => {

@@ -1,4 +1,4 @@
-import type { User, Backpack, Item, Notification, ScanResult, ApiResponse } from '@/types';
+import type { User, Backpack, Item, Notification, ImportantInfo, ScanResult, ApiResponse } from '@/types';
 
 const API_BASE = '/api';
 
@@ -171,6 +171,24 @@ export const notificationsApi = {
       method: 'POST',
       body: JSON.stringify(notificationId ? { notificationId } : { markAllRead: true }),
     });
+  },
+};
+
+// Important info API
+export const importantInfoApi = {
+  async getAll(): Promise<ApiResponse<ImportantInfo[]>> {
+    return fetchApi('/important-info');
+  },
+
+  async create(data: { title: string; content: string }): Promise<ApiResponse<ImportantInfo>> {
+    return fetchApi('/important-info', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  async delete(id: string): Promise<ApiResponse> {
+    return fetchApi(`/important-info/${id}`, { method: 'DELETE' });
   },
 };
 

@@ -78,6 +78,15 @@ export interface Notification {
   createdAt: Date;
 }
 
+export interface ImportantInfo {
+  id: string;
+  title: string;
+  content: string;
+  userId: string;
+  createdAt: Date | string;
+  updatedAt: Date | string;
+}
+
 // Auth types
 export interface LoginCredentials {
   email: string;
