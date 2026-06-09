@@ -77,7 +77,7 @@ Confidence to pewność rozpoznania od 0 do 1.`
               type: 'text',
               text: 'Przeanalizuj to zdjęcie produktu i rozpoznaj kod kreskowy, datę ważności oraz nazwę produktu.',
             },
-          ],
+          ] as unknown as string,
         },
       ],
     });

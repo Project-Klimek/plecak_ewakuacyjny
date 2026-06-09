@@ -44,7 +44,7 @@ import { toast } from '@/hooks/use-toast';
 import { Toaster } from '@/components/ui/toaster';
 
 import { 
-  Backpack, Plus, Trash2, LogOut,
+  Backpack as BackpackIcon, Plus, Trash2, LogOut,
   Utensils, Droplet, Heart, Wrench, FileText, Shirt, Smartphone, Package,
   Camera, Download, Moon, Sun, RefreshCw, 
   ChevronRight, AlertTriangle, X, Check, Search, Minus, ShoppingCart, Menu, Printer
@@ -86,7 +86,7 @@ const backpackColors = [
 type BackpackAudience = 'adult' | 'child' | 'pet' | 'dependent';
 
 const backpackAudiences: { value: BackpackAudience; label: string; description: string; icon: React.ReactNode }[] = [
-  { value: 'adult', label: 'Dorosly', description: 'Standardowy plecak 72h', icon: <Backpack className="h-4 w-4" /> },
+  { value: 'adult', label: 'Dorosly', description: 'Standardowy plecak 72h', icon: <BackpackIcon className="h-4 w-4" /> },
   { value: 'child', label: 'Dziecko', description: 'Plecak dla dziecka', icon: <Shirt className="h-4 w-4" /> },
   { value: 'pet', label: 'Zwierzak', description: 'Rzeczy dla zwierzecia', icon: <Package className="h-4 w-4" /> },
   { value: 'dependent', label: 'Opieka', description: 'Osoba pod opieka', icon: <Heart className="h-4 w-4" /> },
@@ -108,6 +108,10 @@ interface ShoppingItem {
 type ImportantNote = Pick<ImportantInfo, 'id' | 'title' | 'content' | 'createdAt'> & {
   userId?: string;
   updatedAt?: Date | string;
+};
+
+type NewItemForm = Partial<Omit<Item, 'expiryDate'>> & {
+  expiryDate?: string | null;
 };
 
 const SHOPPING_LIST_KEY = 'shoppingList';
@@ -229,7 +233,7 @@ const getStarterChecklistForAudience = (audience: BackpackAudience) => [
 export default function Page() {
   const {
     user, isLoading, isInitialized,
-    backpacks, items, isOffline,
+    backpacks, sharedBackpacks, items, isOffline,
     setUser, setLoading, setInitialized,
     setBackpacks, setSharedBackpacks, setItems, setNotifications, setUnreadNotifications,
     setIsOffline,
@@ -251,7 +255,7 @@ export default function Page() {
     audience: 'adult' as BackpackAudience,
   });
   const [includeStarterChecklist, setIncludeStarterChecklist] = useState(true);
-  const [newItem, setNewItem] = useState<Partial<Item>>({ name: '', quantity: 1, category: 'other' });
+  const [newItem, setNewItem] = useState<NewItemForm>({ name: '', quantity: 1, category: 'other' });
   const [showAddBackpack, setShowAddBackpack] = useState(false);
   const [showAddItem, setShowAddItem] = useState(false);
   const [scanning, setScanning] = useState(false);
@@ -561,7 +565,7 @@ export default function Page() {
             );
 
             if (notesToMigrate.length > 0) {
-              const migrated = [];
+              const migrated: ImportantNote[] = [];
               for (const note of notesToMigrate) {
                 const response = await importantInfoApi.create({
                   title: note.title.trim(),
@@ -831,10 +835,10 @@ export default function Page() {
       quantity: newItem.quantity || 1,
       category: newItem.category || 'other',
       backpackId: selectedBackpackId,
-      expiryDate: newItem.expiryDate || null,
+      expiryDate: newItem.expiryDate ? new Date(newItem.expiryDate) : null,
       barcode: newItem.barcode || null,
       notes: newItem.notes || null,
-      photo: newItem.photo || null,
+      imageUrl: newItem.imageUrl || null,
       createdAt: new Date(),
       updatedAt: new Date(),
     };
@@ -1251,10 +1255,11 @@ export default function Page() {
         const base64 = e.target?.result as string;
         const response = await scanApi.scanImage(base64);
         if (response.success && response.data) {
-          setScanResult(response.data);
-          if (response.data.barcode) setNewItem(prev => ({ ...prev, barcode: response.data.barcode }));
-          if (response.data.expiryDate) setNewItem(prev => ({ ...prev, expiryDate: response.data.expiryDate }));
-          if (response.data.productName) setNewItem(prev => ({ ...prev, name: response.data.productName }));
+          const scanData = response.data;
+          setScanResult(scanData);
+          if (scanData.barcode) setNewItem(prev => ({ ...prev, barcode: scanData.barcode }));
+          if (scanData.expiryDate) setNewItem(prev => ({ ...prev, expiryDate: scanData.expiryDate }));
+          if (scanData.productName) setNewItem(prev => ({ ...prev, name: scanData.productName }));
           toast({ title: 'Zeskanowano!', description: 'Dane rozpoznane' });
         }
         setScanning(false);
@@ -1311,7 +1316,7 @@ export default function Page() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-orange-400 to-red-500">
         <div className="text-center text-white">
-          <Backpack className="h-20 w-20 mx-auto animate-bounce" />
+          <BackpackIcon className="h-20 w-20 mx-auto animate-bounce" />
           <p className="mt-6 text-xl font-semibold">Plecak Ewakuacyjny</p>
           <p className="mt-2 opacity-80">Ladowanie...</p>
         </div>
@@ -1325,7 +1330,7 @@ export default function Page() {
         <div className="max-w-md mx-auto pt-12">
           <div className="text-center mb-8">
             <div className="w-24 h-24 bg-white rounded-3xl mx-auto flex items-center justify-center shadow-xl">
-              <Backpack className="h-14 w-14 text-orange-500" />
+              <BackpackIcon className="h-14 w-14 text-orange-500" />
             </div>
             <h1 className="mt-6 text-2xl font-bold text-white">Plecak Ewakuacyjny</h1>
             <p className="text-white/80 mt-2">Zarzadzaj swoim plecakiem offline</p>
@@ -1594,7 +1599,7 @@ export default function Page() {
 
             {backpacks.length === 0 ? (
               <Card className="rounded-lg border-dashed p-8 text-center shadow-sm">
-                <Backpack className="h-16 w-16 mx-auto text-gray-300 mb-4" />
+                <BackpackIcon className="h-16 w-16 mx-auto text-gray-300 mb-4" />
                 <p className="text-gray-500">Nie masz jeszcze plecakow</p>
                 <p className="text-sm text-gray-400 mt-1">Otworz menu akcji i dodaj pierwszy plecak</p>
               </Card>
@@ -1619,7 +1624,7 @@ export default function Page() {
                         <div className="flex items-start justify-between gap-2">
                           <div className="min-w-0">
                             <div className="mb-3 flex h-9 w-9 items-center justify-center rounded-md bg-neutral-100 dark:bg-neutral-800">
-                              <Backpack className="h-5 w-5" style={{ color: backpack.color }} />
+                              <BackpackIcon className="h-5 w-5" style={{ color: backpack.color }} />
                             </div>
                             <p className="font-semibold text-base truncate">{backpack.name}</p>
                             <p className="text-sm text-neutral-500 dark:text-neutral-400">{itemCount} przedmiotow</p>
@@ -2079,7 +2084,7 @@ export default function Page() {
             className={`flex flex-col items-center justify-center rounded-md ${view === 'backpacks' ? 'bg-neutral-100 text-neutral-950 dark:bg-neutral-800 dark:text-white' : 'text-neutral-500'}`}
             onClick={() => { setView('backpacks'); setSelectedBackpackId(null); }}
           >
-            <Backpack className="h-5 w-5" />
+            <BackpackIcon className="h-5 w-5" />
             <span className="text-xs mt-1">Plecaki</span>
           </button>
           <button

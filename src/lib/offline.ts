@@ -175,6 +175,9 @@ export function isOnline(): boolean {
 export async function registerBackgroundSync(): Promise<void> {
   if ('serviceWorker' in navigator && 'SyncManager' in window) {
     const registration = await navigator.serviceWorker.ready;
-    await registration.sync.register('sync-data');
+    const syncRegistration = registration as ServiceWorkerRegistration & {
+      sync: { register: (tag: string) => Promise<void> };
+    };
+    await syncRegistration.sync.register('sync-data');
   }
 }

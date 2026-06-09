@@ -4,14 +4,16 @@ import jwt from 'jsonwebtoken';
 import { db } from './db';
 import type { User } from '@/types';
 
-const JWT_SECRET = process.env.JWT_SECRET;
+const jwtSecret = process.env.JWT_SECRET;
 const COOKIE_SECURE = process.env.COOKIE_SECURE
   ? process.env.COOKIE_SECURE === 'true'
   : process.env.NODE_ENV === 'production';
 
-if (!JWT_SECRET) {
+if (!jwtSecret) {
   throw new Error('JWT_SECRET must be set before starting the application.');
 }
+
+const JWT_SECRET: string = jwtSecret;
 
 export interface JWTPayload {
   userId: string;
@@ -32,7 +34,7 @@ export function generateToken(payload: JWTPayload): string {
 
 export function verifyToken(token: string): JWTPayload | null {
   try {
-    return jwt.verify(token, JWT_SECRET) as JWTPayload;
+    return jwt.verify(token, JWT_SECRET) as unknown as JWTPayload;
   } catch {
     return null;
   }

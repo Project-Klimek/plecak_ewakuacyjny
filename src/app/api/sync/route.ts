@@ -14,12 +14,17 @@ const syncChangeSchema = z.object({
     'update_item',
     'delete_item',
   ]),
-  data: z.record(z.string(), z.unknown()),
+  data: z.record(z.string(), z.any()),
 });
 
 const syncSchema = z.object({
   changes: z.array(syncChangeSchema).default([]),
 });
+
+type SyncChange = {
+  type: z.infer<typeof syncChangeSchema>['type'];
+  data: Record<string, any>;
+};
 
 function pickBackpackUpdateData(data: Record<string, unknown>) {
   return {
@@ -125,8 +130,8 @@ export async function GET() {
   const allItems = allBackpacks.flatMap(b => b.items);
   
   const syncData: SyncData = {
-    backpacks: allBackpacks,
-    items: allItems,
+    backpacks: allBackpacks as unknown as SyncData['backpacks'],
+    items: allItems as unknown as SyncData['items'],
     lastSync: new Date().toISOString(),
   };
   
@@ -150,7 +155,7 @@ export async function POST(request: NextRequest) {
   try {
     const parsed = await readValidatedJson(request, syncSchema);
     if (!parsed.ok) return parsed.response;
-    const { changes } = parsed.data;
+    const changes = parsed.data.changes as SyncChange[];
     
     const results = {
       created: 0,

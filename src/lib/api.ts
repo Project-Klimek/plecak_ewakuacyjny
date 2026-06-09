@@ -1,4 +1,4 @@
-import type { User, Backpack, Item, Notification, ImportantInfo, ScanResult, ApiResponse } from '@/types';
+import type { User, Backpack, Item, Notification, ImportantInfo, ScanResult, ApiResponse, AuthResponse } from '@/types';
 
 const API_BASE = '/api';
 
@@ -19,14 +19,14 @@ async function fetchApi<T>(
 
 // Auth API
 export const authApi = {
-  async register(email: string, password: string, name: string): Promise<ApiResponse<{ user: User }>> {
+  async register(email: string, password: string, name: string): Promise<AuthResponse> {
     return fetchApi('/auth/register', {
       method: 'POST',
       body: JSON.stringify({ email, password, name }),
     });
   },
   
-  async login(email: string, password: string): Promise<ApiResponse<{ user: User }>> {
+  async login(email: string, password: string): Promise<AuthResponse> {
     return fetchApi('/auth/login', {
       method: 'POST',
       body: JSON.stringify({ email, password }),
@@ -37,7 +37,7 @@ export const authApi = {
     return fetchApi('/auth/logout', { method: 'POST' });
   },
   
-  async me(): Promise<ApiResponse<{ user: User }>> {
+  async me(): Promise<AuthResponse> {
     return fetchApi('/auth/me');
   },
 };
