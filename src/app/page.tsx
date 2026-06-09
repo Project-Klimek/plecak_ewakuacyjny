@@ -193,17 +193,32 @@ const BASE_STARTER_CHECKLIST: StarterChecklistItem[] = [
   { name: 'Biblia drukowana', category: 'documents', quantity: 1, notes: 'Male wydanie drukowane.' },
   { name: 'Telefon z ladowarka', category: 'electronics', quantity: 1, notes: 'Naladowany telefon, ladowarka, przydatna aplikacja JW Library.' },
   { name: 'Powerbank', category: 'electronics', quantity: 1, notes: 'Naladowany, do telefonu i drobnej elektroniki.' },
-  { name: 'Mleko modyfikowane lub kaszki', category: 'food', quantity: 1, notes: 'Dla rodzin z dziecmi: zapas na 3 dni.' },
-  { name: 'Pieluchy jednorazowe', category: 'other', quantity: 20, notes: 'Dla rodzin z dziecmi: ok. 15-20 sztuk na 3 dni.' },
-  { name: 'Chusteczki nawilzane', category: 'medical', quantity: 1, notes: 'Dla dzieci i higieny w drodze.' },
-  { name: 'Ulubiona zabawka lub pluszak', category: 'other', quantity: 1, notes: 'Pomaga dziecku w uspokojeniu.' },
 ];
 
 const AUDIENCE_STARTER_ADDITIONS: Record<BackpackAudience, StarterChecklistItem[]> = {
   adult: [],
-  child: [],
-  pet: [],
-  dependent: [],
+  child: [
+    { name: 'Mleko modyfikowane lub kaszki', category: 'food', quantity: 1, notes: 'Zapas na 3 dni, dopasowany do wieku dziecka.' },
+    { name: 'Pieluchy jednorazowe', category: 'other', quantity: 20, notes: 'Ok. 15-20 sztuk na 3 dni, jesli dziecko ich uzywa.' },
+    { name: 'Chusteczki nawilzane', category: 'medical', quantity: 1, notes: 'Do higieny dziecka i szybkiego oczyszczania rak.' },
+    { name: 'Ulubiona zabawka lub pluszak', category: 'other', quantity: 1, notes: 'Pomaga dziecku uspokoic sie w stresie.' },
+    { name: 'Karta danych dziecka', category: 'documents', quantity: 1, notes: 'Imie, alergie, leki, kontakt do opiekunow i zgoda/opis potrzeb zdrowotnych.' },
+  ],
+  pet: [
+    { name: 'Karma dla zwierzaka', category: 'food', quantity: 1, notes: 'Porcje na minimum 3 dni, najlepiej w szczelnym opakowaniu.' },
+    { name: 'Miska skladana', category: 'water', quantity: 1, notes: 'Do wody i karmy w drodze.' },
+    { name: 'Smycz, szelki lub kaganiec', category: 'tools', quantity: 1, notes: 'Dopasuj do zwierzecia i lokalnych wymagan transportu.' },
+    { name: 'Transporter lub worek transportowy', category: 'other', quantity: 1, notes: 'Bezpieczny transport zwierzecia podczas ewakuacji.' },
+    { name: 'Dokumenty i ksiazeczka zdrowia zwierzaka', category: 'documents', quantity: 1, notes: 'Szczepienia, chip, kontakt do weterynarza i numer wlasciciela.' },
+    { name: 'Woreczki lub podklady higieniczne', category: 'medical', quantity: 1, notes: 'Do utrzymania higieny podczas drogi i postoju.' },
+  ],
+  dependent: [
+    { name: 'Rozpiska lekow i dawkowania', category: 'medical', quantity: 1, notes: 'Aktualna lista lekow, dawki, godziny podawania, alergie i choroby przewlekle.' },
+    { name: 'Dokumentacja medyczna', category: 'documents', quantity: 1, notes: 'Kopie wypisow, recept, orzeczen, danych lekarza i numerow alarmowych.' },
+    { name: 'Zapas srodkow higienicznych', category: 'medical', quantity: 1, notes: 'Podklady, pieluchomajtki, rekawiczki, chusteczki lub inne potrzebne srodki.' },
+    { name: 'Sprzet pomocniczy', category: 'tools', quantity: 1, notes: 'Okulary, aparat sluchowy, baterie, laska, drobne elementy zapasowe.' },
+    { name: 'Karta opiekuna', category: 'documents', quantity: 1, notes: 'Dane opiekuna, relacja, telefony kontaktowe i informacje o codziennej pomocy.' },
+  ],
 };
 
 const getStarterChecklistForAudience = (audience: BackpackAudience) => [
