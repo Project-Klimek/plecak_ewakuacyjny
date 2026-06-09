@@ -100,7 +100,7 @@ interface ShoppingItem {
   category: ItemCategory;
   quantity: number;
   checked: boolean;
-  source: 'expired' | 'expiring' | 'manual';
+  source: 'missing' | 'expired' | 'expiring' | 'manual';
   originalItemId?: string;
   addedAt: string;
 }
@@ -323,7 +323,14 @@ export default function Page() {
     ? backpackItems.filter(i => i.category === selectedCategory)
     : [];
 
+  const getMissingQuantityForItem = useCallback((item: Item) => {
+    const desiredQuantity = item.desiredQuantity ?? null;
+    if (desiredQuantity === null) return 0;
+    return Math.max(0, desiredQuantity - item.quantity);
+  }, []);
+
   const getShoppingSourceForItem = useCallback((item: Item): ShoppingItem['source'] | null => {
+    if (getMissingQuantityForItem(item) > 0) return 'missing';
     if (!item.expiryDate) return null;
     const expDate = new Date(item.expiryDate);
     const now = new Date();
@@ -331,9 +338,17 @@ export default function Page() {
     if (expDate < now) return 'expired';
     if (diffDays <= 7 && diffDays >= 0) return 'expiring';
     return null;
-  }, []);
+  }, [getMissingQuantityForItem]);
+
+  const getShoppingQuantityForItem = useCallback((item: Item, source: ShoppingItem['source']) => {
+    if (source === 'missing') return getMissingQuantityForItem(item);
+    return Math.max(1, item.quantity);
+  }, [getMissingQuantityForItem]);
 
   const getSourceBadge = (source: ShoppingItem['source']) => {
+    if (source === 'missing') {
+      return <Badge className="bg-blue-100 text-blue-700 dark:bg-blue-800 dark:text-blue-200 text-xs">Brakuje</Badge>;
+    }
     if (source === 'expired') {
       return <Badge className="bg-red-100 text-red-700 dark:bg-red-800 dark:text-red-200 text-xs">Po terminie</Badge>;
     }
@@ -341,6 +356,12 @@ export default function Page() {
       return <Badge className="bg-amber-100 text-amber-700 dark:bg-amber-800 dark:text-amber-200 text-xs">Konczy sie</Badge>;
     }
     return <Badge className="bg-blue-100 text-blue-700 dark:bg-blue-800 dark:text-blue-200 text-xs">Recznie</Badge>;
+  };
+
+  const getItemQuantityLabel = (item: Item) => {
+    return item.desiredQuantity !== null && item.desiredQuantity !== undefined
+      ? `${item.quantity}/${item.desiredQuantity}`
+      : String(item.quantity);
   };
 
   const refreshPendingSyncCount = useCallback(async () => {
@@ -442,25 +463,19 @@ export default function Page() {
     if (!shoppingStorageLoaded) return;
 
     setShoppingList((currentList) => {
-      const existingAutoIds = new Set(
-        currentList
-          .filter(item => item.source !== 'manual' && item.originalItemId)
-          .map(item => item.originalItemId)
-      );
       const ignoredIds = new Set(shoppingIgnoredItemIds);
-      const additions: ShoppingItem[] = [];
+      const generatedItems = new Map<string, ShoppingItem>();
 
       items.forEach((item) => {
-        if (existingAutoIds.has(item.id) || ignoredIds.has(item.id)) return;
-
         const source = getShoppingSourceForItem(item);
         if (!source) return;
+        if (source !== 'missing' && ignoredIds.has(item.id)) return;
 
-        additions.push({
+        generatedItems.set(item.id, {
           id: generateId(),
           name: item.name,
           category: item.category,
-          quantity: Math.max(1, item.quantity),
+          quantity: getShoppingQuantityForItem(item, source),
           checked: false,
           source,
           originalItemId: item.id,
@@ -468,9 +483,51 @@ export default function Page() {
         });
       });
 
-      return additions.length > 0 ? [...currentList, ...additions] : currentList;
+      let changed = false;
+      const nextList: ShoppingItem[] = [];
+
+      currentList.forEach((shoppingItem) => {
+        if (shoppingItem.source === 'manual' || !shoppingItem.originalItemId) {
+          nextList.push(shoppingItem);
+          return;
+        }
+
+        const generatedItem = generatedItems.get(shoppingItem.originalItemId);
+        if (!generatedItem) {
+          changed = true;
+          return;
+        }
+
+        generatedItems.delete(shoppingItem.originalItemId);
+
+        const updatedItem = {
+          ...shoppingItem,
+          name: generatedItem.name,
+          category: generatedItem.category,
+          quantity: generatedItem.quantity,
+          source: generatedItem.source,
+        };
+
+        if (
+          updatedItem.name !== shoppingItem.name ||
+          updatedItem.category !== shoppingItem.category ||
+          updatedItem.quantity !== shoppingItem.quantity ||
+          updatedItem.source !== shoppingItem.source
+        ) {
+          changed = true;
+        }
+
+        nextList.push(updatedItem);
+      });
+
+      generatedItems.forEach((shoppingItem) => {
+        nextList.push(shoppingItem);
+        changed = true;
+      });
+
+      return changed ? nextList : currentList;
     });
-  }, [getShoppingSourceForItem, items, shoppingIgnoredItemIds, shoppingStorageLoaded]);
+  }, [getShoppingQuantityForItem, getShoppingSourceForItem, items, shoppingIgnoredItemIds, shoppingStorageLoaded]);
 
   useEffect(() => {
     const init = async () => {
@@ -649,28 +706,14 @@ export default function Page() {
     setView('backpacks');
   };
 
-  const addStarterShoppingItems = (starterItems: Item[]) => {
-    const shoppingItems: ShoppingItem[] = starterItems.map((item) => ({
-      id: generateId(),
-      name: item.name,
-      category: item.category,
-      quantity: item.quantity,
-      checked: false,
-      source: 'manual',
-      originalItemId: item.id,
-      addedAt: new Date().toISOString(),
-    }));
-
-    setShoppingList(prev => [...prev, ...shoppingItems]);
-  };
-
   const createStarterChecklistItems = async (backpackId: string, audience: BackpackAudience, mode: 'server' | 'queued') => {
     const now = new Date();
     const audienceLabel = backpackAudiences.find(item => item.value === audience)?.label || 'Dorosly';
     const localItems: Item[] = getStarterChecklistForAudience(audience).map((template) => ({
       id: generateId(),
       name: template.name,
-      quantity: template.quantity,
+      quantity: 0,
+      desiredQuantity: template.quantity,
       category: template.category,
       backpackId,
       expiryDate: null,
@@ -686,8 +729,6 @@ export default function Page() {
       await saveItemLocal(item);
     }
 
-    addStarterShoppingItems(localItems);
-
     if (mode === 'queued') {
       for (const item of localItems) {
         await queueOfflineChange('create_item', item as unknown as Record<string, unknown>);
@@ -700,6 +741,7 @@ export default function Page() {
         const response = await itemsApi.create({
           name: item.name,
           quantity: item.quantity,
+          desiredQuantity: item.desiredQuantity,
           category: item.category,
           backpackId,
           expiryDate: null,
@@ -895,10 +937,6 @@ export default function Page() {
 
   const handleUpdateItemQuantity = async (item: Item, delta: number) => {
     const newQuantity = Math.max(0, item.quantity + delta);
-    if (newQuantity === 0) {
-      await handleDeleteItem(item.id);
-      return;
-    }
     
     const updatedItem = { ...item, quantity: newQuantity, updatedAt: new Date() };
     updateItem(item.id, { quantity: newQuantity });
@@ -945,7 +983,7 @@ export default function Page() {
 
   const removeShoppingItem = (id: string) => {
     const removedItem = shoppingList.find(item => item.id === id);
-    if (removedItem?.originalItemId) {
+    if (removedItem?.originalItemId && removedItem.source !== 'missing') {
       setShoppingIgnoredItemIds(ids => (
         ids.includes(removedItem.originalItemId!) ? ids : [...ids, removedItem.originalItemId!]
       ));
@@ -974,7 +1012,7 @@ export default function Page() {
 
   const clearCheckedShoppingItems = () => {
     const checkedOriginalIds = shoppingList
-      .filter(item => item.checked && item.originalItemId)
+      .filter(item => item.checked && item.originalItemId && item.source !== 'missing')
       .map(item => item.originalItemId!);
 
     if (checkedOriginalIds.length > 0) {
@@ -1052,7 +1090,7 @@ export default function Page() {
           <tr>
             <td>${escapeHtml(item.name)}</td>
             <td>${escapeHtml(categoryLabel(item.category))}</td>
-            <td>${escapeHtml(item.quantity)}</td>
+            <td>${escapeHtml(getItemQuantityLabel(item))}</td>
             <td>${escapeHtml(formatDate(item.expiryDate))}</td>
             <td><span class="status ${status.className}">${escapeHtml(status.label)}</span></td>
             <td>${escapeHtml(item.notes)}</td>
@@ -1067,7 +1105,7 @@ export default function Page() {
           <p class="muted">${escapeHtml(audience.label)}${isShared ? ' | Udostepniony' : ''}${backpack.description ? ` | ${escapeHtml(backpack.description)}` : ''}</p>
           <table>
             <thead>
-              <tr><th>Przedmiot</th><th>Kategoria</th><th>Ilosc</th><th>Data</th><th>Status</th><th>Notatki</th></tr>
+              <tr><th>Przedmiot</th><th>Kategoria</th><th>Stan / cel</th><th>Data</th><th>Status</th><th>Notatki</th></tr>
             </thead>
             <tbody>${rows}</tbody>
           </table>
@@ -1790,6 +1828,7 @@ export default function Page() {
                 return diff <= 7 && diff >= 0;
               })();
               const isExpired = item.expiryDate && new Date(item.expiryDate) < new Date();
+              const missingQuantity = getMissingQuantityForItem(item);
               
               return (
                 <Card key={item.id} className={`rounded-xl ${isExpiring ? 'border-amber-400 bg-amber-50 dark:bg-amber-900/20' : ''} ${isExpired ? 'border-red-400 bg-red-50 dark:bg-red-900/20' : ''}`}>
@@ -1800,6 +1839,11 @@ export default function Page() {
                         {item.expiryDate && (
                           <span className={isExpiring ? 'text-amber-600 font-medium' : isExpired ? 'text-red-600 font-medium' : ''}>
                             {new Date(item.expiryDate).toLocaleDateString('pl-PL')}
+                          </span>
+                        )}
+                        {missingQuantity > 0 && (
+                          <span className="font-medium text-blue-600 dark:text-blue-300">
+                            brakuje {missingQuantity}
                           </span>
                         )}
                       </div>
@@ -1814,7 +1858,7 @@ export default function Page() {
                       >
                         <Minus className="h-4 w-4" />
                       </Button>
-                      <span className="w-8 text-center font-semibold">{item.quantity}</span>
+                      <span className="w-14 text-center font-semibold">{getItemQuantityLabel(item)}</span>
                       <Button
                         variant="outline"
                         size="icon"
@@ -2042,7 +2086,7 @@ export default function Page() {
                       <div className="flex-1">
                         <p className="font-medium">{item.name}</p>
                         <p className="text-sm text-gray-500">
-                          {backpack?.name} - x{item.quantity}
+                          {backpack?.name} - {getItemQuantityLabel(item)}
                         </p>
                         <p className="text-sm text-amber-600 font-medium mt-1">
                           {new Date(item.expiryDate!).toLocaleDateString('pl-PL')}
@@ -2057,7 +2101,7 @@ export default function Page() {
                         >
                           <Minus className="h-4 w-4" />
                         </Button>
-                        <span className="w-8 text-center font-semibold">{item.quantity}</span>
+                        <span className="w-14 text-center font-semibold">{getItemQuantityLabel(item)}</span>
                         <Button
                           variant="outline"
                           size="icon"
@@ -2091,7 +2135,7 @@ export default function Page() {
                       <div className="flex-1">
                         <p className="font-medium">{item.name}</p>
                         <p className="text-sm text-gray-500">
-                          {backpack?.name} - x{item.quantity}
+                          {backpack?.name} - {getItemQuantityLabel(item)}
                         </p>
                         <p className="text-sm text-red-600 font-medium mt-1">
                           Wygaslo: {new Date(item.expiryDate!).toLocaleDateString('pl-PL')}

@@ -6,7 +6,8 @@ import { z } from 'zod';
 
 const updateItemSchema = z.object({
   name: z.string().min(1).max(200).optional(),
-  quantity: z.number().int().min(1).optional(),
+  quantity: z.number().int().min(0).optional(),
+  desiredQuantity: z.number().int().min(0).optional().nullable(),
   category: z.enum(['food', 'water', 'medical', 'tools', 'documents', 'clothes', 'electronics', 'other']).optional(),
   expiryDate: z.string().optional().nullable(),
   barcode: z.string().max(50).optional().nullable(),

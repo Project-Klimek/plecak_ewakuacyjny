@@ -6,7 +6,8 @@ import { z } from 'zod';
 
 const createItemSchema = z.object({
   name: z.string().min(1, 'Nazwa jest wymagana').max(200),
-  quantity: z.number().int().min(1).default(1),
+  quantity: z.number().int().min(0).default(1),
+  desiredQuantity: z.number().int().min(0).optional().nullable(),
   category: z.enum(['food', 'water', 'medical', 'tools', 'documents', 'clothes', 'electronics', 'other']).default('other'),
   expiryDate: z.string().optional().nullable(),
   barcode: z.string().max(50).optional().nullable(),
@@ -160,6 +161,7 @@ export async function POST(request: NextRequest) {
       data: {
         name: validatedData.name,
         quantity: validatedData.quantity,
+        desiredQuantity: validatedData.desiredQuantity,
         category: validatedData.category,
         expiryDate: validatedData.expiryDate ? new Date(validatedData.expiryDate) : null,
         barcode: validatedData.barcode,

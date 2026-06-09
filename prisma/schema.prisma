@@ -48,6 +48,7 @@ model Item {
   id           String    @id @default(cuid())
   name         String
   quantity     Int       @default(1)
+  desiredQuantity Int?
   category     String    @default("other")
   expiryDate   DateTime?
   barcode      String?

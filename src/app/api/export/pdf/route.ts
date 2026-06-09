@@ -118,7 +118,10 @@ export async function POST(request: NextRequest) {
           : '';
         const barcodeText = item.barcode ? ` | EAN: ${item.barcode}` : '';
         
-        doc.text(`• ${item.name} (x${item.quantity})${expiryText}${barcodeText}`, 15, y);
+        const quantityText = item.desiredQuantity !== null
+          ? `${item.quantity}/${item.desiredQuantity}`
+          : `x${item.quantity}`;
+        doc.text(`• ${item.name} (${quantityText})${expiryText}${barcodeText}`, 15, y);
         
         if (item.notes) {
           doc.setFontSize(8);

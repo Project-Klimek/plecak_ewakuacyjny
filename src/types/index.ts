@@ -26,6 +26,7 @@ export interface Item {
   id: string;
   name: string;
   quantity: number;
+  desiredQuantity?: number | null;
   category: ItemCategory;
   expiryDate: Date | null;
   barcode: string | null;

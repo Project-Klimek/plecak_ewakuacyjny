@@ -41,6 +41,9 @@ function pickItemUpdateData(data: Record<string, unknown>) {
   return {
     ...(typeof data.name === 'string' && { name: data.name }),
     ...(typeof data.quantity === 'number' && { quantity: data.quantity }),
+    ...(typeof data.desiredQuantity === 'number' || data.desiredQuantity === null
+      ? { desiredQuantity: data.desiredQuantity as number | null }
+      : {}),
     ...(typeof data.category === 'string' && { category: data.category }),
     ...(data.expiryDate !== undefined
       ? { expiryDate: data.expiryDate ? new Date(String(data.expiryDate)) : null }
@@ -233,6 +236,7 @@ export async function POST(request: NextRequest) {
                     id: change.data.id,
                     name: change.data.name,
                     quantity: change.data.quantity,
+                    desiredQuantity: typeof change.data.desiredQuantity === 'number' ? change.data.desiredQuantity : null,
                     category: change.data.category,
                     expiryDate: change.data.expiryDate ? new Date(change.data.expiryDate) : null,
                     barcode: change.data.barcode,

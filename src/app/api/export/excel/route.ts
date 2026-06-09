@@ -17,6 +17,12 @@ function csvRow(values: Array<string | number | null | undefined>) {
   return values.map(csvValue).join(';');
 }
 
+function itemQuantityLabel(item: { quantity: number; desiredQuantity: number | null }) {
+  return item.desiredQuantity !== null
+    ? `${item.quantity}/${item.desiredQuantity}`
+    : String(item.quantity);
+}
+
 export async function POST(request: NextRequest) {
   const user = await getCurrentUser();
   
@@ -75,12 +81,12 @@ export async function POST(request: NextRequest) {
     };
     
     const rows = [
-      csvRow(['Nazwa', 'Kategoria', 'Ilosc', 'Data waznosci', 'Kod kreskowy', 'Notatki', 'Dodano']),
+      csvRow(['Nazwa', 'Kategoria', 'Stan / cel', 'Data waznosci', 'Kod kreskowy', 'Notatki', 'Dodano']),
       ...backpack.items.map((item) =>
         csvRow([
           item.name,
           categoryLabels[item.category] || item.category,
-          item.quantity,
+          itemQuantityLabel(item),
           item.expiryDate ? new Date(item.expiryDate).toLocaleDateString('pl-PL') : '',
           item.barcode || '',
           item.notes || '',
