@@ -116,7 +116,43 @@
   * {
     @apply border-border outline-ring/50;
   }
+  html,
+  body {
+    min-height: 100%;
+  }
   body {
     @apply bg-background text-foreground;
+    overflow-x: hidden;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+@layer utilities {
+  .app-scroll-root {
+    min-height: 100dvh;
+    overflow-x: hidden;
+  }
+
+  .app-main-scroll {
+    padding-bottom: calc(7rem + env(safe-area-inset-bottom, 0px));
+    touch-action: pan-y;
+  }
+
+  .app-bottom-nav {
+    bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px));
+  }
+
+  .app-modal-scroll {
+    max-height: calc(100dvh - 2rem);
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .app-sheet-scroll {
+    max-height: calc(100dvh - env(safe-area-inset-top, 0px));
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: max(1rem, env(safe-area-inset-bottom, 0px));
   }
 }

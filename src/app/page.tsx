@@ -1461,7 +1461,7 @@ export default function Page() {
   }
 
   return (
-    <div className="min-h-screen bg-neutral-100 text-neutral-950 dark:bg-neutral-950 dark:text-neutral-50">
+    <div className="app-scroll-root bg-neutral-100 text-neutral-950 dark:bg-neutral-950 dark:text-neutral-50">
       <header className="sticky top-0 z-40 border-b border-neutral-200 bg-white/95 backdrop-blur dark:border-neutral-800 dark:bg-neutral-950/95">
         <div className="flex items-center justify-between px-4 py-3">
           <div className="flex items-center">
@@ -1569,7 +1569,7 @@ export default function Page() {
         )}
       </header>
 
-      <main className="px-4 py-4 pb-28">
+      <main className="app-main-scroll px-4 py-4">
         {view === 'backpacks' && (
           <div className="space-y-4">
             <Card className="rounded-lg border-neutral-200 bg-white shadow-sm dark:border-neutral-800 dark:bg-neutral-900">
@@ -2114,7 +2114,7 @@ export default function Page() {
         )}
       </main>
 
-      <nav className="fixed bottom-3 left-3 right-3 z-50 rounded-lg border border-neutral-200 bg-white/95 p-1 shadow-lg backdrop-blur dark:border-neutral-800 dark:bg-neutral-900/95">
+      <nav className="app-bottom-nav fixed left-3 right-3 z-50 rounded-lg border border-neutral-200 bg-white/95 p-1 shadow-lg backdrop-blur dark:border-neutral-800 dark:bg-neutral-900/95">
         <div className="grid grid-cols-5 h-14 gap-1">
           <button
             className={`flex flex-col items-center justify-center rounded-md ${view === 'backpacks' ? 'bg-neutral-100 text-neutral-950 dark:bg-neutral-800 dark:text-white' : 'text-neutral-500'}`}
@@ -2170,7 +2170,7 @@ export default function Page() {
       </nav>
 
       <Dialog open={showAddBackpack} onOpenChange={setShowAddBackpack}>
-        <DialogContent className="rounded-3xl">
+        <DialogContent className="app-modal-scroll rounded-3xl">
           <DialogHeader>
             <DialogTitle className="text-xl">Nowy plecak</DialogTitle>
           </DialogHeader>
@@ -2258,7 +2258,7 @@ export default function Page() {
       </Dialog>
 
       <Sheet open={showAddItem} onOpenChange={setShowAddItem}>
-        <SheetContent side="bottom" className="rounded-t-3xl">
+        <SheetContent side="bottom" className="app-sheet-scroll rounded-t-3xl">
           <SheetHeader>
             <SheetTitle className="text-xl">Dodaj przedmiot</SheetTitle>
           </SheetHeader>
@@ -2379,7 +2379,7 @@ export default function Page() {
       </Sheet>
 
       <Sheet open={showAddShoppingItem} onOpenChange={setShowAddShoppingItem}>
-        <SheetContent side="bottom" className="rounded-t-3xl">
+        <SheetContent side="bottom" className="app-sheet-scroll rounded-t-3xl">
           <SheetHeader>
             <SheetTitle className="text-xl flex items-center gap-2">
               <ShoppingCart className="h-5 w-5" />
@@ -2445,7 +2445,7 @@ export default function Page() {
       </Sheet>
 
       <Sheet open={showAddImportantNote} onOpenChange={setShowAddImportantNote}>
-        <SheetContent side="bottom" className="rounded-t-3xl">
+        <SheetContent side="bottom" className="app-sheet-scroll rounded-t-3xl">
           <SheetHeader>
             <SheetTitle className="text-xl flex items-center gap-2">
               <FileText className="h-5 w-5" />
