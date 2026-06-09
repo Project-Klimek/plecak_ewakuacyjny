@@ -15,9 +15,6 @@ const nextConfig: NextConfig = {
       },
     ];
   },
-  typescript: {
-    ignoreBuildErrors: true,
-  },
   reactStrictMode: false,
   allowedDevOrigins: [
     '192.168.100.166',
