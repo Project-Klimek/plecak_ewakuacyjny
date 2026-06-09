@@ -487,7 +487,7 @@ export default function Page() {
       const nextList: ShoppingItem[] = [];
 
       currentList.forEach((shoppingItem) => {
-        if (shoppingItem.source === 'manual' || !shoppingItem.originalItemId) {
+        if (!shoppingItem.originalItemId) {
           nextList.push(shoppingItem);
           return;
         }
