@@ -565,7 +565,7 @@ export default function Page() {
             );
 
             if (notesToMigrate.length > 0) {
-              const migrated: ImportantNote[] = [];
+              const migrated: ImportantInfo[] = [];
               for (const note of notesToMigrate) {
                 const response = await importantInfoApi.create({
                   title: note.title.trim(),
@@ -868,10 +868,14 @@ export default function Page() {
     
     try {
       const response = await itemsApi.create({
-        ...newItem,
+        name: localItem.name,
         backpackId: selectedBackpackId,
-        quantity: newItem.quantity || 1,
-        category: newItem.category || 'other',
+        quantity: localItem.quantity,
+        category: localItem.category,
+        expiryDate: localItem.expiryDate,
+        barcode: localItem.barcode,
+        notes: localItem.notes,
+        imageUrl: localItem.imageUrl,
       });
       if (response.success && response.data) {
         removeItem(localItem.id);
@@ -1259,7 +1263,8 @@ export default function Page() {
           setScanResult(scanData);
           if (scanData.barcode) setNewItem(prev => ({ ...prev, barcode: scanData.barcode }));
           if (scanData.expiryDate) setNewItem(prev => ({ ...prev, expiryDate: scanData.expiryDate }));
-          if (scanData.productName) setNewItem(prev => ({ ...prev, name: scanData.productName }));
+          const productName = scanData.productName;
+          if (productName) setNewItem(prev => ({ ...prev, name: productName }));
           toast({ title: 'Zeskanowano!', description: 'Dane rozpoznane' });
         }
         setScanning(false);
@@ -2309,7 +2314,7 @@ export default function Page() {
                 <Input
                   type="date"
                   value={newItem.expiryDate ? new Date(newItem.expiryDate).toISOString().split('T')[0] : ''}
-                  onChange={(e) => setNewItem({ ...newItem, expiryDate: e.target.value ? new Date(e.target.value) : null })}
+                  onChange={(e) => setNewItem({ ...newItem, expiryDate: e.target.value || null })}
                   className="h-12 rounded-xl"
                 />
               </div>
