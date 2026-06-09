@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth';
+import { readValidatedJson } from '@/lib/api-validation';
 import { z } from 'zod';
 
 const updateItemSchema = z.object({
@@ -92,8 +93,9 @@ export async function PUT(
   }
   
   try {
-    const body = await request.json();
-    const validatedData = updateItemSchema.parse(body);
+    const parsed = await readValidatedJson(request, updateItemSchema);
+    if (!parsed.ok) return parsed.response;
+    const validatedData = parsed.data;
     
     const updatedItem = await db.item.update({
       where: { id },
@@ -107,13 +109,6 @@ export async function PUT(
     
     return NextResponse.json({ success: true, data: updatedItem });
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { success: false, error: error.issues[0]?.message || 'Nieprawidlowe dane' },
-        { status: 400 }
-      );
-    }
-    
     console.error('Update item error:', error);
     return NextResponse.json(
       { success: false, error: 'Wystąpił błąd podczas aktualizacji przedmiotu' },

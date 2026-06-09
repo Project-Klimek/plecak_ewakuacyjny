@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth';
+import { readValidatedJson } from '@/lib/api-validation';
 import { z } from 'zod';
 
 const createBackpackSchema = z.object({
@@ -76,8 +77,9 @@ export async function POST(request: NextRequest) {
   }
   
   try {
-    const body = await request.json();
-    const validatedData = createBackpackSchema.parse(body);
+    const parsed = await readValidatedJson(request, createBackpackSchema);
+    if (!parsed.ok) return parsed.response;
+    const validatedData = parsed.data;
     
     const backpack = await db.backpack.create({
       data: {
@@ -94,13 +96,6 @@ export async function POST(request: NextRequest) {
     
     return NextResponse.json({ success: true, data: backpack });
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { success: false, error: error.issues[0]?.message || 'Nieprawidlowe dane' },
-        { status: 400 }
-      );
-    }
-    
     console.error('Create backpack error:', error);
     return NextResponse.json(
       { success: false, error: 'Wystąpił błąd podczas tworzenia plecaka' },

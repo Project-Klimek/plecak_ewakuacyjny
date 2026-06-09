@@ -1,7 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth';
+import { readValidatedJson } from '@/lib/api-validation';
 import type { SyncData } from '@/types';
+import { z } from 'zod';
+
+const syncChangeSchema = z.object({
+  type: z.enum([
+    'create_backpack',
+    'update_backpack',
+    'delete_backpack',
+    'create_item',
+    'update_item',
+    'delete_item',
+  ]),
+  data: z.record(z.string(), z.unknown()),
+});
+
+const syncSchema = z.object({
+  changes: z.array(syncChangeSchema).default([]),
+});
 
 function pickBackpackUpdateData(data: Record<string, unknown>) {
   return {
@@ -130,8 +148,9 @@ export async function POST(request: NextRequest) {
   }
   
   try {
-    const body = await request.json();
-    const { changes } = body;
+    const parsed = await readValidatedJson(request, syncSchema);
+    if (!parsed.ok) return parsed.response;
+    const { changes } = parsed.data;
     
     const results = {
       created: 0,
@@ -140,7 +159,7 @@ export async function POST(request: NextRequest) {
       errors: [] as string[],
     };
     
-    for (const change of changes || []) {
+    for (const change of changes) {
       try {
         switch (change.type) {
           case 'create_backpack': {

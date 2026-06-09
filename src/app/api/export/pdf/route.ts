@@ -1,7 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
 import { db } from '@/lib/db';
+import { readValidatedJson } from '@/lib/api-validation';
 import jsPDF from 'jspdf';
+import { z } from 'zod';
+
+const exportSchema = z.object({
+  backpackId: z.string().min(1, 'Brak ID plecaka'),
+});
 
 export async function POST(request: NextRequest) {
   const user = await getCurrentUser();
@@ -14,15 +20,9 @@ export async function POST(request: NextRequest) {
   }
   
   try {
-    const body = await request.json();
-    const { backpackId } = body;
-    
-    if (!backpackId) {
-      return NextResponse.json(
-        { success: false, error: 'Brak ID plecaka' },
-        { status: 400 }
-      );
-    }
+    const parsed = await readValidatedJson(request, exportSchema);
+    if (!parsed.ok) return parsed.response;
+    const { backpackId } = parsed.data;
     
     // Sprawdź dostęp i pobierz dane
     const backpack = await db.backpack.findUnique({

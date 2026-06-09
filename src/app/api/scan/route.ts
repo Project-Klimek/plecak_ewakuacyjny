@@ -1,9 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
+import { readValidatedJson } from '@/lib/api-validation';
 import ZAI from 'z-ai-web-dev-sdk';
 import type { ScanResult } from '@/types';
+import { z } from 'zod';
 
 const MAX_IMAGE_LENGTH = 6_000_000;
+
+const scanSchema = z.object({
+  image: z.string().min(1, 'Brak obrazu do analizy'),
+});
 
 export async function POST(request: NextRequest) {
   const user = await getCurrentUser();
@@ -16,15 +22,9 @@ export async function POST(request: NextRequest) {
   }
   
   try {
-    const body = await request.json();
-    const { image } = body;
-    
-    if (typeof image !== 'string' || !image.trim()) {
-      return NextResponse.json(
-        { success: false, error: 'Brak obrazu do analizy' },
-        { status: 400 }
-      );
-    }
+    const parsed = await readValidatedJson(request, scanSchema);
+    if (!parsed.ok) return parsed.response;
+    const { image } = parsed.data;
 
     if (image.length > MAX_IMAGE_LENGTH) {
       return NextResponse.json(

@@ -1,6 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth';
+import { readValidatedJson } from '@/lib/api-validation';
+import { z } from 'zod';
+
+const notificationActionSchema = z.object({
+  notificationId: z.string().min(1).optional(),
+  markAllRead: z.boolean().optional(),
+}).refine((data) => data.markAllRead || data.notificationId, {
+  message: 'Brak parametrow',
+});
 
 export async function GET(request: NextRequest) {
   const user = await getCurrentUser();
@@ -50,8 +59,9 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const body = await request.json();
-  const { notificationId, markAllRead } = body;
+  const parsed = await readValidatedJson(request, notificationActionSchema);
+  if (!parsed.ok) return parsed.response;
+  const { notificationId, markAllRead } = parsed.data;
 
   if (markAllRead) {
     await db.notification.updateMany({
@@ -77,8 +87,5 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: result.count > 0 });
   }
 
-  return NextResponse.json(
-    { success: false, error: 'Brak parametrow' },
-    { status: 400 }
-  );
+  return NextResponse.json({ success: false, error: 'Brak parametrow' }, { status: 400 });
 }

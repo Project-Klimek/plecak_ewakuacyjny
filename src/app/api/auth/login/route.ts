@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { authenticateUser, createSession } from '@/lib/auth';
 import { checkRateLimit, resetRateLimit } from '@/lib/rate-limit';
+import { readValidatedJson } from '@/lib/api-validation';
 import { z } from 'zod';
 
 const loginSchema = z.object({
@@ -25,17 +26,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    let body: unknown;
-    try {
-      body = await request.json();
-    } catch {
-      return NextResponse.json(
-        { success: false, error: 'Nieprawidlowy format danych' },
-        { status: 400 }
-      );
-    }
-
-    const validatedData = loginSchema.parse(body);
+    const parsed = await readValidatedJson(request, loginSchema);
+    if (!parsed.ok) return parsed.response;
+    const validatedData = parsed.data;
     
     const result = await authenticateUser(validatedData.email, validatedData.password);
     
@@ -54,13 +47,6 @@ export async function POST(request: NextRequest) {
       user: result.user,
     });
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { success: false, error: error.issues[0]?.message || 'Nieprawidlowe dane' },
-        { status: 400 }
-      );
-    }
-    
     console.error('Login error:', error);
     return NextResponse.json(
       { success: false, error: 'Wystąpił błąd podczas logowania' },

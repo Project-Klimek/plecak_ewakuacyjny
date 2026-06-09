@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth';
+import { readValidatedJson } from '@/lib/api-validation';
 import { z } from 'zod';
 
 const createItemSchema = z.object({
@@ -142,8 +143,9 @@ export async function POST(request: NextRequest) {
   }
   
   try {
-    const body = await request.json();
-    const validatedData = createItemSchema.parse(body);
+    const parsed = await readValidatedJson(request, createItemSchema);
+    if (!parsed.ok) return parsed.response;
+    const validatedData = parsed.data;
     
     const { access } = await checkBackpackWriteAccess(validatedData.backpackId, user.id);
     
@@ -169,13 +171,6 @@ export async function POST(request: NextRequest) {
     
     return NextResponse.json({ success: true, data: item });
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { success: false, error: error.issues[0]?.message || 'Nieprawidlowe dane' },
-        { status: 400 }
-      );
-    }
-    
     console.error('Create item error:', error);
     return NextResponse.json(
       { success: false, error: 'Wystąpił błąd podczas dodawania przedmiotu' },
