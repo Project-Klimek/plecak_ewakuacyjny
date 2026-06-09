@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { useAppStore } from '@/store';
-import { authApi, backpacksApi, itemsApi, scanApi, exportApi, notificationsApi, importantInfoApi, syncApi } from '@/lib/api';
+import { authApi, backpacksApi, itemsApi, scanApi, productsApi, exportApi, notificationsApi, importantInfoApi, syncApi } from '@/lib/api';
 import type { Backpack, Item, ItemCategory, ImportantInfo } from '@/types';
 import { ITEM_CATEGORIES } from '@/types';
 import {
@@ -1250,6 +1250,34 @@ export default function Page() {
     }
   };
 
+  const enrichItemFromBarcode = useCallback(async (barcode: string) => {
+    try {
+      const response = await productsApi.lookupBarcode(barcode);
+      const product = response.data;
+
+      if (!response.success || !product?.found) return false;
+
+      const productName = product.productName;
+      const details = [
+        product.brand ? `Marka: ${product.brand}` : null,
+        product.quantity ? `Opakowanie: ${product.quantity}` : null,
+      ].filter(Boolean).join('\n');
+
+      setNewItem(prev => ({
+        ...prev,
+        name: productName || prev.name,
+        category: prev.category && prev.category !== 'other' ? prev.category : 'food',
+        imageUrl: product.imageUrl || prev.imageUrl,
+        notes: prev.notes || details || prev.notes,
+      }));
+
+      toast({ title: 'Produkt znaleziony', description: productName || 'Uzupelniono dane z kodu kreskowego' });
+      return true;
+    } catch {
+      return false;
+    }
+  }, []);
+
   const handleScan = useCallback(async (file: File) => {
     setScanning(true);
     setScanResult(null);
@@ -1261,10 +1289,13 @@ export default function Page() {
         if (response.success && response.data) {
           const scanData = response.data;
           setScanResult(scanData);
-          if (scanData.barcode) setNewItem(prev => ({ ...prev, barcode: scanData.barcode }));
           if (scanData.expiryDate) setNewItem(prev => ({ ...prev, expiryDate: scanData.expiryDate }));
           const productName = scanData.productName;
           if (productName) setNewItem(prev => ({ ...prev, name: productName }));
+          if (scanData.barcode) {
+            setNewItem(prev => ({ ...prev, barcode: scanData.barcode }));
+            await enrichItemFromBarcode(scanData.barcode);
+          }
           toast({ title: 'Zeskanowano!', description: 'Dane rozpoznane' });
         }
         setScanning(false);
@@ -1274,7 +1305,7 @@ export default function Page() {
       setScanning(false);
       toast({ title: 'Blad', description: 'Nie udalo sie rozpoznac', variant: 'destructive' });
     }
-  }, []);
+  }, [enrichItemFromBarcode]);
 
   const handleExportPdf = async () => {
     if (!selectedBackpackId) return;

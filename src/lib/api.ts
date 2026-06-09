@@ -1,4 +1,4 @@
-import type { User, Backpack, Item, Notification, ImportantInfo, ScanResult, ApiResponse, AuthResponse } from '@/types';
+import type { User, Backpack, Item, Notification, ImportantInfo, ScanResult, BarcodeProduct, ApiResponse, AuthResponse } from '@/types';
 
 const API_BASE = '/api';
 
@@ -122,6 +122,13 @@ export const scanApi = {
       method: 'POST',
       body: JSON.stringify({ image: imageBase64 }),
     });
+  },
+};
+
+// Products API
+export const productsApi = {
+  async lookupBarcode(barcode: string): Promise<ApiResponse<BarcodeProduct>> {
+    return fetchApi(`/products/barcode/${encodeURIComponent(barcode)}`);
   },
 };
 

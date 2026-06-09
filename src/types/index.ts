@@ -126,3 +126,13 @@ export interface ScanResult {
   productName: string | null;
   confidence: number;
 }
+
+export interface BarcodeProduct {
+  barcode: string;
+  found: boolean;
+  productName: string | null;
+  brand: string | null;
+  quantity: string | null;
+  imageUrl: string | null;
+  source: 'openfoodfacts';
+}
