@@ -256,6 +256,8 @@ export default function Page() {
   });
   const [includeStarterChecklist, setIncludeStarterChecklist] = useState(true);
   const [newItem, setNewItem] = useState<NewItemForm>({ name: '', quantity: 1, category: 'other' });
+  const [editingItem, setEditingItem] = useState<Item | null>(null);
+  const [editItemForm, setEditItemForm] = useState<NewItemForm>({ name: '', quantity: 0, category: 'other' });
   const [showAddBackpack, setShowAddBackpack] = useState(false);
   const [showAddItem, setShowAddItem] = useState(false);
   const [scanning, setScanning] = useState(false);
@@ -363,6 +365,21 @@ export default function Page() {
     return item.desiredQuantity !== null && item.desiredQuantity !== undefined
       ? `${item.quantity}/${item.desiredQuantity}`
       : String(item.quantity);
+  };
+
+  const formatDateInputValue = (value: Date | string | null | undefined) => {
+    if (!value) return '';
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? '' : date.toISOString().split('T')[0];
+  };
+
+  const openEditItem = (item: Item) => {
+    setEditingItem(item);
+    setEditItemForm({
+      ...item,
+      desiredQuantity: item.desiredQuantity ?? null,
+      expiryDate: formatDateInputValue(item.expiryDate),
+    });
   };
 
   const refreshPendingSyncCount = useCallback(async () => {
@@ -955,6 +972,58 @@ export default function Page() {
       }
     } catch {
       await queueOfflineChange('update_item', { id: item.id, quantity: newQuantity });
+    }
+  };
+
+  const handleUpdateItemDetails = async () => {
+    if (!editingItem || !editItemForm.name?.trim()) return;
+
+    const desiredQuantityValue = editItemForm.desiredQuantity;
+    const updatePayload = {
+      name: editItemForm.name.trim(),
+      quantity: Math.max(0, Number(editItemForm.quantity ?? 0)),
+      desiredQuantity:
+        desiredQuantityValue === null || desiredQuantityValue === undefined
+          ? null
+          : Math.max(0, Number(desiredQuantityValue)),
+      category: editItemForm.category || 'other',
+      expiryDate: editItemForm.expiryDate || null,
+      barcode: editItemForm.barcode?.trim() || null,
+      notes: editItemForm.notes?.trim() || null,
+      imageUrl: editItemForm.imageUrl || null,
+    };
+
+    const updatedItem: Item = {
+      ...editingItem,
+      ...updatePayload,
+      expiryDate: updatePayload.expiryDate ? new Date(updatePayload.expiryDate) : null,
+      updatedAt: new Date(),
+    };
+
+    updateItem(editingItem.id, updatedItem);
+    await saveItemLocal(updatedItem);
+    setEditingItem(null);
+    setEditItemForm({ name: '', quantity: 0, category: 'other' });
+
+    if (!isBrowserOnline()) {
+      await queueOfflineChange('update_item', { id: editingItem.id, ...updatePayload });
+      toast({ title: 'Zapisano', description: 'Zmiany zapisane lokalnie (offline)' });
+      return;
+    }
+
+    try {
+      const response = await itemsApi.update(editingItem.id, updatePayload);
+      if (response.success && response.data) {
+        updateItem(editingItem.id, response.data);
+        await saveItemLocal(response.data);
+        toast({ title: 'Zapisano', description: 'Przedmiot zaktualizowany' });
+      } else {
+        await queueOfflineChange('update_item', { id: editingItem.id, ...updatePayload });
+        toast({ title: 'Zapisano lokalnie', description: 'Zmiana zsynchronizuje sie pozniej' });
+      }
+    } catch {
+      await queueOfflineChange('update_item', { id: editingItem.id, ...updatePayload });
+      toast({ title: 'Zapisano lokalnie', description: 'Zmiana zsynchronizuje sie pozniej' });
     }
   };
 
@@ -1833,7 +1902,11 @@ export default function Page() {
               const missingQuantity = getMissingQuantityForItem(item);
               
               return (
-                <Card key={item.id} className={`rounded-xl ${isExpiring ? 'border-amber-400 bg-amber-50 dark:bg-amber-900/20' : ''} ${isExpired ? 'border-red-400 bg-red-50 dark:bg-red-900/20' : ''}`}>
+                <Card
+                  key={item.id}
+                  className={`cursor-pointer rounded-xl ${isExpiring ? 'border-amber-400 bg-amber-50 dark:bg-amber-900/20' : ''} ${isExpired ? 'border-red-400 bg-red-50 dark:bg-red-900/20' : ''}`}
+                  onClick={() => openEditItem(item)}
+                >
                   <div className="flex items-center p-3">
                     <div className="flex-1">
                       <p className="font-medium">{item.name}</p>
@@ -1856,7 +1929,10 @@ export default function Page() {
                         variant="outline"
                         size="icon"
                         className="h-8 w-8 rounded-lg"
-                        onClick={() => handleUpdateItemQuantity(item, -1)}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          handleUpdateItemQuantity(item, -1);
+                        }}
                       >
                         <Minus className="h-4 w-4" />
                       </Button>
@@ -1865,7 +1941,10 @@ export default function Page() {
                         variant="outline"
                         size="icon"
                         className="h-8 w-8 rounded-lg"
-                        onClick={() => handleUpdateItemQuantity(item, 1)}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          handleUpdateItemQuantity(item, 1);
+                        }}
                       >
                         <Plus className="h-4 w-4" />
                       </Button>
@@ -2420,6 +2499,134 @@ export default function Page() {
               <Check className="h-5 w-5 mr-2" />
               Dodaj przedmiot
             </Button>
+          </div>
+        </SheetContent>
+      </Sheet>
+
+      <Sheet open={!!editingItem} onOpenChange={(open) => !open && setEditingItem(null)}>
+        <SheetContent side="bottom" className="app-sheet-scroll rounded-t-3xl">
+          <SheetHeader>
+            <SheetTitle className="text-xl">Edytuj przedmiot</SheetTitle>
+          </SheetHeader>
+          <div className="space-y-4 mt-4 max-h-[70vh] overflow-y-auto">
+            <div>
+              <Label className="text-base">Nazwa *</Label>
+              <Input
+                placeholder="Nazwa przedmiotu"
+                value={editItemForm.name || ''}
+                onChange={(e) => setEditItemForm({ ...editItemForm, name: e.target.value })}
+                className="h-12 rounded-xl text-base"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label className="text-base">Mam</Label>
+                <Input
+                  type="number"
+                  min="0"
+                  value={editItemForm.quantity ?? 0}
+                  onChange={(e) => setEditItemForm({ ...editItemForm, quantity: Math.max(0, parseInt(e.target.value, 10) || 0) })}
+                  className="h-12 rounded-xl text-base"
+                />
+              </div>
+              <div>
+                <Label className="text-base">Cel</Label>
+                <Input
+                  type="number"
+                  min="0"
+                  placeholder="Brak"
+                  value={editItemForm.desiredQuantity ?? ''}
+                  onChange={(e) => setEditItemForm({
+                    ...editItemForm,
+                    desiredQuantity: e.target.value === '' ? null : Math.max(0, parseInt(e.target.value, 10) || 0),
+                  })}
+                  className="h-12 rounded-xl text-base"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label className="text-base">Kategoria</Label>
+                <Select
+                  value={editItemForm.category || 'other'}
+                  onValueChange={(v) => setEditItemForm({ ...editItemForm, category: v as ItemCategory })}
+                >
+                  <SelectTrigger className="h-12 rounded-xl">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {ITEM_CATEGORIES.map((cat) => (
+                      <SelectItem key={cat.value} value={cat.value}>
+                        <div className="flex items-center gap-2">
+                          {categoryIcons[cat.value]}
+                          {cat.label}
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label className="text-base">Data waznosci</Label>
+                <Input
+                  type="date"
+                  value={formatDateInputValue(editItemForm.expiryDate)}
+                  onChange={(e) => setEditItemForm({ ...editItemForm, expiryDate: e.target.value || null })}
+                  className="h-12 rounded-xl"
+                />
+              </div>
+            </div>
+
+            <div>
+              <Label className="text-base">Kod kreskowy</Label>
+              <Input
+                placeholder="EAN"
+                value={editItemForm.barcode || ''}
+                onChange={(e) => setEditItemForm({ ...editItemForm, barcode: e.target.value })}
+                className="h-12 rounded-xl"
+              />
+            </div>
+
+            <div>
+              <Label className="text-base">Notatki</Label>
+              <Textarea
+                placeholder="Dodatkowe informacje..."
+                value={editItemForm.notes || ''}
+                onChange={(e) => setEditItemForm({ ...editItemForm, notes: e.target.value })}
+                className="rounded-xl"
+              />
+            </div>
+
+            <div className="flex gap-2 pt-2">
+              <Button onClick={handleUpdateItemDetails} className="flex-1 h-12 rounded-xl bg-orange-500 hover:bg-orange-600">
+                <Check className="h-5 w-5 mr-2" />
+                Zapisz
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => setEditingItem(null)}
+                className="h-12 rounded-xl"
+              >
+                Anuluj
+              </Button>
+            </div>
+
+            {editingItem && (
+              <Button
+                variant="ghost"
+                className="w-full h-12 rounded-xl text-red-600 hover:text-red-700"
+                onClick={async () => {
+                  const itemId = editingItem.id;
+                  setEditingItem(null);
+                  await handleDeleteItem(itemId);
+                }}
+              >
+                <Trash2 className="h-5 w-5 mr-2" />
+                Usun przedmiot
+              </Button>
+            )}
           </div>
         </SheetContent>
       </Sheet>

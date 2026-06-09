@@ -2,6 +2,10 @@ import type { User, Backpack, Item, Notification, ImportantInfo, ScanResult, Bar
 
 const API_BASE = '/api';
 
+type ItemWritePayload = Partial<Omit<Item, 'expiryDate'>> & {
+  expiryDate?: Date | string | null;
+};
+
 async function fetchApi<T>(
   endpoint: string,
   options: RequestInit = {}
@@ -96,14 +100,14 @@ export const itemsApi = {
     return fetchApi(`/items?expiringWithin=${days}`);
   },
   
-  async create(data: Partial<Item> & { backpackId: string }): Promise<ApiResponse<Item>> {
+  async create(data: ItemWritePayload & { backpackId: string }): Promise<ApiResponse<Item>> {
     return fetchApi('/items', {
       method: 'POST',
       body: JSON.stringify(data),
     });
   },
   
-  async update(id: string, data: Partial<Item>): Promise<ApiResponse<Item>> {
+  async update(id: string, data: ItemWritePayload): Promise<ApiResponse<Item>> {
     return fetchApi(`/items/${id}`, {
       method: 'PUT',
       body: JSON.stringify(data),
