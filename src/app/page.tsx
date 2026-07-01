@@ -269,7 +269,7 @@ export default function Page() {
   const [shoppingIgnoredItemIds, setShoppingIgnoredItemIds] = useState<string[]>([]);
   const [shoppingStorageLoaded, setShoppingStorageLoaded] = useState(false);
   const [showAddShoppingItem, setShowAddShoppingItem] = useState(false);
-  const [newShoppingItem, setNewShoppingItem] = useState({ name: '', quantity: 1, category: 'other' as ItemCategory });
+  const [newShoppingItem, setNewShoppingItem] = useState<{ name: string; quantity?: number; category: ItemCategory }>({ name: '', quantity: 1, category: 'other' });
   const [importantNotes, setImportantNotes] = useState<ImportantNote[]>([]);
   const [infoStorageLoaded, setInfoStorageLoaded] = useState(false);
   const [showAddImportantNote, setShowAddImportantNote] = useState(false);
@@ -371,6 +371,11 @@ export default function Page() {
     if (!value) return '';
     const date = new Date(value);
     return Number.isNaN(date.getTime()) ? '' : date.toISOString().split('T')[0];
+  };
+
+  const parseOptionalNonNegativeInt = (value: string) => {
+    if (value === '') return undefined;
+    return Math.max(0, parseInt(value, 10) || 0);
   };
 
   const openEditItem = (item: Item) => {
@@ -892,7 +897,7 @@ export default function Page() {
     const localItem: Item = {
       id: generateId(),
       name: newItem.name,
-      quantity: newItem.quantity || 1,
+      quantity: newItem.quantity ?? 1,
       category: newItem.category || 'other',
       backpackId: selectedBackpackId,
       expiryDate: newItem.expiryDate ? new Date(newItem.expiryDate) : null,
@@ -2436,8 +2441,8 @@ export default function Page() {
                 <Input
                   type="number"
                   min="1"
-                  value={newItem.quantity || 1}
-                  onChange={(e) => setNewItem({ ...newItem, quantity: parseInt(e.target.value) || 1 })}
+                  value={newItem.quantity ?? ''}
+                  onChange={(e) => setNewItem({ ...newItem, quantity: parseOptionalNonNegativeInt(e.target.value) })}
                   className="h-12 rounded-xl text-base"
                 />
               </div>
@@ -2525,8 +2530,8 @@ export default function Page() {
                 <Input
                   type="number"
                   min="0"
-                  value={editItemForm.quantity ?? 0}
-                  onChange={(e) => setEditItemForm({ ...editItemForm, quantity: Math.max(0, parseInt(e.target.value, 10) || 0) })}
+                  value={editItemForm.quantity ?? ''}
+                  onChange={(e) => setEditItemForm({ ...editItemForm, quantity: parseOptionalNonNegativeInt(e.target.value) })}
                   className="h-12 rounded-xl text-base"
                 />
               </div>
@@ -2539,7 +2544,7 @@ export default function Page() {
                   value={editItemForm.desiredQuantity ?? ''}
                   onChange={(e) => setEditItemForm({
                     ...editItemForm,
-                    desiredQuantity: e.target.value === '' ? null : Math.max(0, parseInt(e.target.value, 10) || 0),
+                    desiredQuantity: e.target.value === '' ? null : parseOptionalNonNegativeInt(e.target.value),
                   })}
                   className="h-12 rounded-xl text-base"
                 />
@@ -2656,8 +2661,8 @@ export default function Page() {
                 <Input
                   type="number"
                   min="1"
-                  value={newShoppingItem.quantity}
-                  onChange={(e) => setNewShoppingItem({ ...newShoppingItem, quantity: parseInt(e.target.value) || 1 })}
+                  value={newShoppingItem.quantity ?? ''}
+                  onChange={(e) => setNewShoppingItem({ ...newShoppingItem, quantity: parseOptionalNonNegativeInt(e.target.value) })}
                   className="h-12 rounded-xl text-base"
                 />
               </div>
