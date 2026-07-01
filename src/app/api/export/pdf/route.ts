@@ -29,6 +29,11 @@ export async function POST(request: NextRequest) {
       where: { id: backpackId },
       include: {
         items: {
+          include: {
+            batches: {
+              orderBy: [{ expiryDate: 'asc' }, { createdAt: 'asc' }],
+            },
+          },
           orderBy: [{ category: 'asc' }, { name: 'asc' }],
         },
         user: {
@@ -113,8 +118,13 @@ export async function POST(request: NextRequest) {
           y = 20;
         }
         
-        const expiryText = item.expiryDate 
-          ? ` | Ważne do: ${new Date(item.expiryDate).toLocaleDateString('pl-PL')}` 
+        const earliestBatchDate = item.batches
+          .map(batch => batch.expiryDate ? new Date(batch.expiryDate).getTime() : Number.NaN)
+          .filter(timestamp => !Number.isNaN(timestamp))
+          .sort((a, b) => a - b)[0];
+        const effectiveExpiryDate = earliestBatchDate ? new Date(earliestBatchDate) : item.expiryDate;
+        const expiryText = effectiveExpiryDate
+          ? ` | Ważne do: ${new Date(effectiveExpiryDate).toLocaleDateString('pl-PL')}`
           : '';
         const barcodeText = item.barcode ? ` | EAN: ${item.barcode}` : '';
         
@@ -127,6 +137,19 @@ export async function POST(request: NextRequest) {
           doc.setFontSize(8);
           doc.setTextColor(120);
           doc.text(`  ${item.notes}`, 15, y + 4);
+          doc.setFontSize(10);
+          doc.setTextColor(80);
+          y += 4;
+        }
+
+        if (item.batches.length > 0) {
+          doc.setFontSize(8);
+          doc.setTextColor(120);
+          doc.text(
+            `  Partie: ${item.batches.map(batch => `${batch.quantity} szt. ${batch.expiryDate ? new Date(batch.expiryDate).toLocaleDateString('pl-PL') : 'bez daty'}`).join('; ')}`,
+            15,
+            y + 4
+          );
           doc.setFontSize(10);
           doc.setTextColor(80);
           y += 4;

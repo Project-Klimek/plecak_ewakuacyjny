@@ -2,8 +2,13 @@ import type { User, Backpack, Item, Notification, ImportantInfo, ScanResult, Bar
 
 const API_BASE = '/api';
 
-type ItemWritePayload = Partial<Omit<Item, 'expiryDate'>> & {
+type ItemWritePayload = Partial<Omit<Item, 'expiryDate' | 'batches'>> & {
   expiryDate?: Date | string | null;
+  batches?: Array<{
+    quantity: number;
+    expiryDate?: Date | string | null;
+    note?: string | null;
+  }>;
 };
 
 async function fetchApi<T>(

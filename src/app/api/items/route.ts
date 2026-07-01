@@ -14,6 +14,11 @@ const createItemSchema = z.object({
   notes: z.string().max(1000).optional().nullable(),
   imageUrl: z.string().optional().nullable(),
   backpackId: z.string(),
+  batches: z.array(z.object({
+    quantity: z.number().int().min(1),
+    expiryDate: z.string().optional().nullable(),
+    note: z.string().max(300).optional().nullable(),
+  })).optional().default([]),
 });
 
 // Helper - sprawdzanie dostępu do plecaka
@@ -77,6 +82,11 @@ export async function GET(request: NextRequest) {
         backpackId,
         ...(category && { category }),
       },
+      include: {
+        batches: {
+          orderBy: [{ expiryDate: 'asc' }, { createdAt: 'asc' }],
+        },
+      },
       orderBy: [{ category: 'asc' }, { name: 'asc' }],
     });
     
@@ -125,6 +135,9 @@ export async function GET(request: NextRequest) {
       backpack: {
         select: { id: true, name: true, color: true },
       },
+      batches: {
+        orderBy: [{ expiryDate: 'asc' }, { createdAt: 'asc' }],
+      },
     },
     orderBy: { expiryDate: 'asc' },
   });
@@ -157,10 +170,12 @@ export async function POST(request: NextRequest) {
       );
     }
     
+    const batchQuantity = validatedData.batches.reduce((sum, batch) => sum + batch.quantity, 0);
+
     const item = await db.item.create({
       data: {
         name: validatedData.name,
-        quantity: validatedData.quantity,
+        quantity: validatedData.batches.length > 0 ? batchQuantity : validatedData.quantity,
         desiredQuantity: validatedData.desiredQuantity,
         category: validatedData.category,
         expiryDate: validatedData.expiryDate ? new Date(validatedData.expiryDate) : null,
@@ -168,6 +183,20 @@ export async function POST(request: NextRequest) {
         notes: validatedData.notes,
         imageUrl: validatedData.imageUrl,
         backpackId: validatedData.backpackId,
+        batches: validatedData.batches.length > 0
+          ? {
+              create: validatedData.batches.map((batch) => ({
+                quantity: batch.quantity,
+                expiryDate: batch.expiryDate ? new Date(batch.expiryDate) : null,
+                note: batch.note,
+              })),
+            }
+          : undefined,
+      },
+      include: {
+        batches: {
+          orderBy: [{ expiryDate: 'asc' }, { createdAt: 'asc' }],
+        },
       },
     });
     

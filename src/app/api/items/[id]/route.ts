@@ -13,6 +13,11 @@ const updateItemSchema = z.object({
   barcode: z.string().max(50).optional().nullable(),
   notes: z.string().max(1000).optional().nullable(),
   imageUrl: z.string().optional().nullable(),
+  batches: z.array(z.object({
+    quantity: z.number().int().min(1),
+    expiryDate: z.string().optional().nullable(),
+    note: z.string().max(300).optional().nullable(),
+  })).optional(),
 });
 
 // Helper - sprawdzanie dostępu do przedmiotu
@@ -20,6 +25,7 @@ async function checkItemAccess(itemId: string, userId: string, requireWrite = fa
   const item = await db.item.findUnique({
     where: { id: itemId },
     include: {
+      batches: true,
       backpack: {
         include: {
           sharedWith: { where: { userId } },
@@ -97,16 +103,51 @@ export async function PUT(
     const parsed = await readValidatedJson(request, updateItemSchema);
     if (!parsed.ok) return parsed.response;
     const validatedData = parsed.data;
+    const batchQuantity = validatedData.batches?.reduce((sum, batch) => sum + batch.quantity, 0);
     
     const updatedItem = await db.item.update({
       where: { id },
       data: {
         ...validatedData,
+        quantity: batchQuantity !== undefined ? batchQuantity : validatedData.quantity,
+        batches: undefined,
         expiryDate: validatedData.expiryDate !== undefined 
           ? (validatedData.expiryDate ? new Date(validatedData.expiryDate) : null)
           : undefined,
       },
+      include: {
+        batches: {
+          orderBy: [{ expiryDate: 'asc' }, { createdAt: 'asc' }],
+        },
+      },
     });
+
+    if (validatedData.batches !== undefined) {
+      await db.$transaction([
+        db.itemBatch.deleteMany({ where: { itemId: id } }),
+        ...validatedData.batches.map((batch) =>
+          db.itemBatch.create({
+            data: {
+              itemId: id,
+              quantity: batch.quantity,
+              expiryDate: batch.expiryDate ? new Date(batch.expiryDate) : null,
+              note: batch.note,
+            },
+          })
+        ),
+      ]);
+
+      const itemWithBatches = await db.item.findUnique({
+        where: { id },
+        include: {
+          batches: {
+            orderBy: [{ expiryDate: 'asc' }, { createdAt: 'asc' }],
+          },
+        },
+      });
+
+      return NextResponse.json({ success: true, data: itemWithBatches });
+    }
     
     return NextResponse.json({ success: true, data: updatedItem });
   } catch (error) {

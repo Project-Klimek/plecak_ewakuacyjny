@@ -66,6 +66,11 @@ export async function GET(
     where: { id },
     include: {
       items: {
+        include: {
+          batches: {
+            orderBy: [{ expiryDate: 'asc' }, { createdAt: 'asc' }],
+          },
+        },
         orderBy: { category: 'asc' },
       },
       sharedWith: {
@@ -132,7 +137,11 @@ export async function PUT(
       where: { id },
       data: validatedData,
       include: {
-        items: true,
+        items: {
+          include: {
+            batches: true,
+          },
+        },
       },
     });
     

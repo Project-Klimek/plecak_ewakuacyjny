@@ -35,6 +35,17 @@ export interface Item {
   backpackId: string;
   createdAt: Date;
   updatedAt: Date;
+  batches?: ItemBatch[];
+}
+
+export interface ItemBatch {
+  id: string;
+  itemId: string;
+  quantity: number;
+  expiryDate: Date | string | null;
+  note: string | null;
+  createdAt: Date | string;
+  updatedAt: Date | string;
 }
 
 export type ItemCategory = 

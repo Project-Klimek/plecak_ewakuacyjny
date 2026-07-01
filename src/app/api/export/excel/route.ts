@@ -42,6 +42,11 @@ export async function POST(request: NextRequest) {
       where: { id: backpackId },
       include: {
         items: {
+          include: {
+            batches: {
+              orderBy: [{ expiryDate: 'asc' }, { createdAt: 'asc' }],
+            },
+          },
           orderBy: [{ category: 'asc' }, { name: 'asc' }],
         },
         user: {
@@ -80,6 +85,19 @@ export async function POST(request: NextRequest) {
       other: 'Inne',
     };
     
+    const itemExpiryDate = (item: typeof backpack.items[number]) => {
+      const timestamps = item.batches
+        .map(batch => batch.expiryDate ? new Date(batch.expiryDate).getTime() : Number.NaN)
+        .filter(timestamp => !Number.isNaN(timestamp));
+      if (timestamps.length > 0) return new Date(Math.min(...timestamps));
+      return item.expiryDate;
+    };
+
+    const itemBatchSummary = (item: typeof backpack.items[number]) =>
+      item.batches.length > 0
+        ? item.batches.map(batch => `${batch.quantity} szt. ${batch.expiryDate ? new Date(batch.expiryDate).toLocaleDateString('pl-PL') : 'bez daty'}`).join('; ')
+        : '';
+
     const rows = [
       csvRow(['Nazwa', 'Kategoria', 'Stan / cel', 'Data waznosci', 'Kod kreskowy', 'Notatki', 'Dodano']),
       ...backpack.items.map((item) =>
@@ -87,9 +105,9 @@ export async function POST(request: NextRequest) {
           item.name,
           categoryLabels[item.category] || item.category,
           itemQuantityLabel(item),
-          item.expiryDate ? new Date(item.expiryDate).toLocaleDateString('pl-PL') : '',
+          itemExpiryDate(item) ? new Date(itemExpiryDate(item)!).toLocaleDateString('pl-PL') : '',
           item.barcode || '',
-          item.notes || '',
+          [item.notes || '', itemBatchSummary(item)].filter(Boolean).join(' | '),
           new Date(item.createdAt).toLocaleDateString('pl-PL'),
         ])
       ),

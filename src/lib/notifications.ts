@@ -14,12 +14,29 @@ export async function checkExpiryDates() {
 
     const expiringItems = await db.item.findMany({
       where: {
-        expiryDate: {
-          gte: startDate,
-          lte: targetDate,
-        },
+        OR: [
+          {
+            expiryDate: {
+              gte: startDate,
+              lte: targetDate,
+            },
+          },
+          {
+            batches: {
+              some: {
+                expiryDate: {
+                  gte: startDate,
+                  lte: targetDate,
+                },
+              },
+            },
+          },
+        ],
       },
       include: {
+        batches: {
+          orderBy: [{ expiryDate: 'asc' }, { createdAt: 'asc' }],
+        },
         backpack: {
           include: {
             user: true,
@@ -32,6 +49,13 @@ export async function checkExpiryDates() {
     });
 
     for (const item of expiringItems) {
+      const matchingBatch = item.batches.find((batch) => {
+        if (!batch.expiryDate) return false;
+        return batch.expiryDate >= startDate && batch.expiryDate <= targetDate;
+      });
+      const expiryDate = matchingBatch?.expiryDate || item.expiryDate;
+      const batchText = matchingBatch ? ` (${matchingBatch.quantity} szt. z partii)` : '';
+
       const existingNotification = await db.notification.findFirst({
         where: {
           itemId: item.id,
@@ -49,7 +73,7 @@ export async function checkExpiryDates() {
           userId: item.backpack.userId,
           type: 'expiry_warning',
           title: `Przedmiot konczy sie za ${days} dni`,
-          message: `"${item.name}" w plecaku "${item.backpack.name}" konczy sie ${new Date(item.expiryDate!).toLocaleDateString('pl-PL')}`,
+          message: `"${item.name}"${batchText} w plecaku "${item.backpack.name}" konczy sie ${new Date(expiryDate!).toLocaleDateString('pl-PL')}`,
           itemId: item.id,
         },
       });
@@ -60,7 +84,7 @@ export async function checkExpiryDates() {
             userId: share.userId,
             type: 'expiry_warning',
             title: `Przedmiot konczy sie za ${days} dni`,
-            message: `"${item.name}" w udostepnionym plecaku "${item.backpack.name}" konczy sie ${new Date(item.expiryDate!).toLocaleDateString('pl-PL')}`,
+            message: `"${item.name}"${batchText} w udostepnionym plecaku "${item.backpack.name}" konczy sie ${new Date(expiryDate!).toLocaleDateString('pl-PL')}`,
             itemId: item.id,
           },
         });

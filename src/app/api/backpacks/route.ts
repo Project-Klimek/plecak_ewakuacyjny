@@ -26,7 +26,13 @@ export async function GET() {
   const ownBackpacks = await db.backpack.findMany({
     where: { userId: user.id },
     include: {
-      items: true,
+      items: {
+        include: {
+          batches: {
+            orderBy: [{ expiryDate: 'asc' }, { createdAt: 'asc' }],
+          },
+        },
+      },
       sharedWith: {
         include: {
           user: {
@@ -43,7 +49,13 @@ export async function GET() {
     include: {
       backpack: {
         include: {
-          items: true,
+          items: {
+            include: {
+              batches: {
+                orderBy: [{ expiryDate: 'asc' }, { createdAt: 'asc' }],
+              },
+            },
+          },
           user: {
             select: { id: true, email: true, name: true },
           },
@@ -90,7 +102,11 @@ export async function POST(request: NextRequest) {
         userId: user.id,
       },
       include: {
-        items: true,
+        items: {
+          include: {
+            batches: true,
+          },
+        },
       },
     });
     

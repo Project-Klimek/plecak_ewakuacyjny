@@ -60,6 +60,21 @@ function pickItemUpdateData(data: Record<string, unknown>) {
   };
 }
 
+function parseBatches(data: Record<string, unknown>) {
+  if (!Array.isArray(data.batches)) return undefined;
+  return data.batches
+    .filter((batch): batch is Record<string, unknown> => typeof batch === 'object' && batch !== null)
+    .map((batch) => ({
+      quantity: typeof batch.quantity === 'number' ? Math.max(1, Math.trunc(batch.quantity)) : 1,
+      expiryDate: batch.expiryDate ? new Date(String(batch.expiryDate)) : null,
+      note: typeof batch.note === 'string' ? batch.note : null,
+    }));
+}
+
+function sumBatchQuantity(batches: ReturnType<typeof parseBatches>) {
+  return batches?.reduce((sum, batch) => sum + batch.quantity, 0);
+}
+
 async function userCanEditBackpack(backpackId: string, userId: string) {
   const backpack = await db.backpack.findUnique({
     where: { id: backpackId },
@@ -81,6 +96,7 @@ async function getEditableItem(itemId: string, userId: string) {
   const item = await db.item.findUnique({
     where: { id: itemId },
     include: {
+      batches: true,
       backpack: {
         include: {
           sharedWith: {
@@ -115,13 +131,31 @@ export async function GET() {
   // Pobierz wszystkie plecaki użytkownika
   const ownBackpacks = await db.backpack.findMany({
     where: { userId: user.id },
-    include: { items: true },
+    include: {
+      items: {
+        include: {
+          batches: {
+            orderBy: [{ expiryDate: 'asc' }, { createdAt: 'asc' }],
+          },
+        },
+      },
+    },
   });
   
   const sharedBackpacks = await db.sharedBackpack.findMany({
     where: { userId: user.id },
     include: {
-      backpack: { include: { items: true } },
+      backpack: {
+        include: {
+          items: {
+            include: {
+              batches: {
+                orderBy: [{ expiryDate: 'asc' }, { createdAt: 'asc' }],
+              },
+            },
+          },
+        },
+      },
     },
   });
   
@@ -231,11 +265,12 @@ export async function POST(request: NextRequest) {
               const canEditBackpack = await userCanEditBackpack(change.data.backpackId, user.id);
               
               if (canEditBackpack) {
+                const batches = parseBatches(change.data);
                 await db.item.create({
                   data: {
                     id: change.data.id,
                     name: change.data.name,
-                    quantity: change.data.quantity,
+                    quantity: sumBatchQuantity(batches) ?? change.data.quantity,
                     desiredQuantity: typeof change.data.desiredQuantity === 'number' ? change.data.desiredQuantity : null,
                     category: change.data.category,
                     expiryDate: change.data.expiryDate ? new Date(change.data.expiryDate) : null,
@@ -243,6 +278,11 @@ export async function POST(request: NextRequest) {
                     notes: change.data.notes,
                     imageUrl: change.data.imageUrl,
                     backpackId: change.data.backpackId,
+                    batches: batches
+                      ? {
+                          create: batches,
+                        }
+                      : undefined,
                   },
                 });
                 results.created++;
@@ -255,9 +295,28 @@ export async function POST(request: NextRequest) {
             const item = await getEditableItem(change.data.id, user.id);
             
             if (item) {
+              const batches = parseBatches(change.data);
+
+              if (batches) {
+                await db.$transaction([
+                  db.itemBatch.deleteMany({ where: { itemId: change.data.id } }),
+                  ...batches.map((batch) =>
+                    db.itemBatch.create({
+                      data: {
+                        itemId: change.data.id,
+                        ...batch,
+                      },
+                    })
+                  ),
+                ]);
+              }
+
               await db.item.update({
                 where: { id: change.data.id },
-                data: pickItemUpdateData(change.data),
+                data: {
+                  ...pickItemUpdateData(change.data),
+                  quantity: sumBatchQuantity(batches) ?? pickItemUpdateData(change.data).quantity,
+                },
               });
               results.updated++;
             }

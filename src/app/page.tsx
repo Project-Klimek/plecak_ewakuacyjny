@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useAppStore } from '@/store';
 import { authApi, backpacksApi, itemsApi, scanApi, productsApi, exportApi, notificationsApi, importantInfoApi, syncApi } from '@/lib/api';
-import type { Backpack, Item, ItemCategory, ImportantInfo } from '@/types';
+import type { Backpack, Item, ItemBatch, ItemCategory, ImportantInfo } from '@/types';
 import { ITEM_CATEGORIES } from '@/types';
 import {
   saveBackpackLocal,
@@ -110,7 +110,13 @@ type ImportantNote = Pick<ImportantInfo, 'id' | 'title' | 'content' | 'createdAt
   updatedAt?: Date | string;
 };
 
-type NewItemForm = Partial<Omit<Item, 'expiryDate'>> & {
+type NewItemForm = Partial<Omit<Item, 'expiryDate' | 'batches'>> & {
+  expiryDate?: string | null;
+  batches?: ItemBatchForm[];
+};
+
+type ItemBatchForm = Pick<ItemBatch, 'id' | 'note'> & {
+  quantity?: number;
   expiryDate?: string | null;
 };
 
@@ -298,17 +304,38 @@ export default function Page() {
     return acc;
   }, {} as Record<string, Item[]>);
 
+  const getEarliestBatchExpiryDate = (item: Item) => {
+    const timestamps = (item.batches || [])
+      .map(batch => batch.expiryDate ? new Date(batch.expiryDate).getTime() : Number.NaN)
+      .filter(timestamp => !Number.isNaN(timestamp));
+
+    if (timestamps.length === 0) return null;
+    return new Date(Math.min(...timestamps));
+  };
+
+  const getItemEffectiveExpiryDate = (item: Item) =>
+    getEarliestBatchExpiryDate(item) || item.expiryDate;
+
+  const getItemExpiryLabel = (item: Item) => {
+    const expiryDate = getItemEffectiveExpiryDate(item);
+    if (!expiryDate) return null;
+    const suffix = (item.batches || []).length > 0 ? 'najblizsza partia' : 'data';
+    return `${new Date(expiryDate).toLocaleDateString('pl-PL')} (${suffix})`;
+  };
+
   const expiringItems = filteredItems.filter(i => {
-    if (!i.expiryDate) return false;
-    const expDate = new Date(i.expiryDate);
+    const expiryDate = getItemEffectiveExpiryDate(i);
+    if (!expiryDate) return false;
+    const expDate = new Date(expiryDate);
     const now = new Date();
     const diffDays = Math.ceil((expDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
     return diffDays <= 7 && diffDays >= 0;
   });
 
   const expiredItems = filteredItems.filter(i => {
-    if (!i.expiryDate) return false;
-    const expDate = new Date(i.expiryDate);
+    const expiryDate = getItemEffectiveExpiryDate(i);
+    if (!expiryDate) return false;
+    const expDate = new Date(expiryDate);
     return expDate < new Date();
   });
 
@@ -334,8 +361,9 @@ export default function Page() {
 
   const getShoppingSourceForItem = useCallback((item: Item): ShoppingItem['source'] | null => {
     if (getMissingQuantityForItem(item) > 0) return 'missing';
-    if (!item.expiryDate) return null;
-    const expDate = new Date(item.expiryDate);
+    const expiryDate = getItemEffectiveExpiryDate(item);
+    if (!expiryDate) return null;
+    const expDate = new Date(expiryDate);
     const now = new Date();
     const diffDays = Math.ceil((expDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
     if (expDate < now) return 'expired';
@@ -378,12 +406,54 @@ export default function Page() {
     return Math.max(0, parseInt(value, 10) || 0);
   };
 
+  const parseRequiredPositiveInt = (value: string) => {
+    if (value === '') return undefined;
+    return Math.max(1, parseInt(value, 10) || 1);
+  };
+
+  const addEditItemBatch = () => {
+    setEditItemForm((current) => ({
+      ...current,
+      batches: [
+        ...(current.batches || []),
+        {
+          id: generateId(),
+          quantity: 1,
+          expiryDate: current.expiryDate || null,
+          note: null,
+        },
+      ],
+    }));
+  };
+
+  const updateEditItemBatch = (batchId: string, data: Partial<ItemBatchForm>) => {
+    setEditItemForm((current) => ({
+      ...current,
+      batches: (current.batches || []).map((batch) =>
+        batch.id === batchId ? { ...batch, ...data } : batch
+      ),
+    }));
+  };
+
+  const removeEditItemBatch = (batchId: string) => {
+    setEditItemForm((current) => ({
+      ...current,
+      batches: (current.batches || []).filter((batch) => batch.id !== batchId),
+    }));
+  };
+
   const openEditItem = (item: Item) => {
     setEditingItem(item);
     setEditItemForm({
       ...item,
       desiredQuantity: item.desiredQuantity ?? null,
       expiryDate: formatDateInputValue(item.expiryDate),
+      batches: (item.batches || []).map((batch) => ({
+        id: batch.id,
+        quantity: batch.quantity,
+        expiryDate: formatDateInputValue(batch.expiryDate),
+        note: batch.note,
+      })),
     });
   };
 
@@ -984,9 +1054,19 @@ export default function Page() {
     if (!editingItem || !editItemForm.name?.trim()) return;
 
     const desiredQuantityValue = editItemForm.desiredQuantity;
+    const normalizedBatches = (editItemForm.batches || [])
+      .map((batch) => ({
+        quantity: Math.max(1, Number(batch.quantity || 1)),
+        expiryDate: batch.expiryDate || null,
+        note: batch.note?.trim() || null,
+      }))
+      .filter((batch) => batch.quantity > 0);
+    const batchQuantity = normalizedBatches.reduce((sum, batch) => sum + batch.quantity, 0);
     const updatePayload = {
       name: editItemForm.name.trim(),
-      quantity: Math.max(0, Number(editItemForm.quantity ?? 0)),
+      quantity: normalizedBatches.length > 0
+        ? batchQuantity
+        : Math.max(0, Number(editItemForm.quantity ?? 0)),
       desiredQuantity:
         desiredQuantityValue === null || desiredQuantityValue === undefined
           ? null
@@ -996,12 +1076,22 @@ export default function Page() {
       barcode: editItemForm.barcode?.trim() || null,
       notes: editItemForm.notes?.trim() || null,
       imageUrl: editItemForm.imageUrl || null,
+      batches: normalizedBatches,
     };
 
     const updatedItem: Item = {
       ...editingItem,
       ...updatePayload,
       expiryDate: updatePayload.expiryDate ? new Date(updatePayload.expiryDate) : null,
+      batches: normalizedBatches.map((batch) => ({
+        id: generateId(),
+        itemId: editingItem.id,
+        quantity: batch.quantity,
+        expiryDate: batch.expiryDate,
+        note: batch.note,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      })),
       updatedAt: new Date(),
     };
 
@@ -1160,15 +1250,21 @@ export default function Page() {
 
       const rows = backpackItemsForPrint.length > 0
         ? backpackItemsForPrint.map(item => {
-          const status = itemStatus(item.expiryDate);
+          const expiryDate = getItemEffectiveExpiryDate(item);
+          const status = itemStatus(expiryDate);
+          const batchSummary = (item.batches || []).length > 0
+            ? `Partie: ${(item.batches || [])
+                .map(batch => `${batch.quantity} szt. ${batch.expiryDate ? formatDate(batch.expiryDate) : 'bez daty'}`)
+                .join('; ')}`
+            : '';
           return `
           <tr>
             <td>${escapeHtml(item.name)}</td>
             <td>${escapeHtml(categoryLabel(item.category))}</td>
             <td>${escapeHtml(getItemQuantityLabel(item))}</td>
-            <td>${escapeHtml(formatDate(item.expiryDate))}</td>
+            <td>${escapeHtml(formatDate(expiryDate))}</td>
             <td><span class="status ${status.className}">${escapeHtml(status.label)}</span></td>
-            <td>${escapeHtml(item.notes)}</td>
+            <td>${escapeHtml([item.notes, batchSummary].filter(Boolean).join(' | '))}</td>
           </tr>
         `;
         }).join('')
@@ -1899,11 +1995,13 @@ export default function Page() {
         {view === 'items' && selectedCategory && (
           <div className="space-y-2">
             {categoryItems.map((item) => {
-              const isExpiring = item.expiryDate && (() => {
-                const diff = Math.ceil((new Date(item.expiryDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+              const effectiveExpiryDate = getItemEffectiveExpiryDate(item);
+              const expiryLabel = getItemExpiryLabel(item);
+              const isExpiring = effectiveExpiryDate && (() => {
+                const diff = Math.ceil((new Date(effectiveExpiryDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
                 return diff <= 7 && diff >= 0;
               })();
-              const isExpired = item.expiryDate && new Date(item.expiryDate) < new Date();
+              const isExpired = effectiveExpiryDate && new Date(effectiveExpiryDate) < new Date();
               const missingQuantity = getMissingQuantityForItem(item);
               
               return (
@@ -1916,9 +2014,14 @@ export default function Page() {
                     <div className="flex-1">
                       <p className="font-medium">{item.name}</p>
                       <div className="flex items-center gap-2 text-sm text-gray-500 mt-1">
-                        {item.expiryDate && (
+                        {expiryLabel && (
                           <span className={isExpiring ? 'text-amber-600 font-medium' : isExpired ? 'text-red-600 font-medium' : ''}>
-                            {new Date(item.expiryDate).toLocaleDateString('pl-PL')}
+                            {expiryLabel}
+                          </span>
+                        )}
+                        {(item.batches || []).length > 0 && (
+                          <span className="font-medium text-neutral-500 dark:text-neutral-400">
+                            {(item.batches || []).length} partie
                           </span>
                         )}
                         {missingQuantity > 0 && (
@@ -2166,6 +2269,7 @@ export default function Page() {
             ) : (
               expiringItems.map((item) => {
                 const backpack = backpacks.find(b => b.id === item.backpackId);
+                const expiryDate = getItemEffectiveExpiryDate(item);
                 return (
                   <Card key={item.id} className="rounded-xl border-amber-400 bg-amber-50 dark:bg-amber-900/20">
                     <div className="flex items-center p-3">
@@ -2175,7 +2279,7 @@ export default function Page() {
                           {backpack?.name} - {getItemQuantityLabel(item)}
                         </p>
                         <p className="text-sm text-amber-600 font-medium mt-1">
-                          {new Date(item.expiryDate!).toLocaleDateString('pl-PL')}
+                          {expiryDate ? new Date(expiryDate).toLocaleDateString('pl-PL') : ''}
                         </p>
                       </div>
                       <div className="flex items-center gap-2">
@@ -2215,6 +2319,7 @@ export default function Page() {
             ) : (
               expiredItems.map((item) => {
                 const backpack = backpacks.find(b => b.id === item.backpackId);
+                const expiryDate = getItemEffectiveExpiryDate(item);
                 return (
                   <Card key={item.id} className="rounded-xl border-red-400 bg-red-50 dark:bg-red-900/20">
                     <div className="flex items-center p-3">
@@ -2224,7 +2329,7 @@ export default function Page() {
                           {backpack?.name} - {getItemQuantityLabel(item)}
                         </p>
                         <p className="text-sm text-red-600 font-medium mt-1">
-                          Wygaslo: {new Date(item.expiryDate!).toLocaleDateString('pl-PL')}
+                          Wygaslo: {expiryDate ? new Date(expiryDate).toLocaleDateString('pl-PL') : ''}
                         </p>
                       </div>
                       <Button
@@ -2582,6 +2687,76 @@ export default function Page() {
                   className="h-12 rounded-xl"
                 />
               </div>
+            </div>
+
+            <div className="space-y-3 rounded-xl border border-neutral-200 bg-neutral-50 p-3 dark:border-neutral-800 dark:bg-neutral-900">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <Label className="text-base font-medium">Partie / daty waznosci</Label>
+                  <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                    Dla kilku takich samych rzeczy z roznymi terminami.
+                  </p>
+                </div>
+                <Button type="button" variant="outline" size="sm" className="shrink-0 rounded-lg" onClick={addEditItemBatch}>
+                  <Plus className="h-4 w-4 mr-1" />
+                  Dodaj
+                </Button>
+              </div>
+
+              {(editItemForm.batches || []).length === 0 ? (
+                <p className="rounded-lg border border-dashed border-neutral-300 p-3 text-sm text-neutral-500 dark:border-neutral-700 dark:text-neutral-400">
+                  Brak partii. Uzywana jest pojedyncza data waznosci powyzej.
+                </p>
+              ) : (
+                <div className="space-y-3">
+                  {(editItemForm.batches || []).map((batch, index) => (
+                    <div key={batch.id} className="rounded-lg border border-neutral-200 bg-white p-3 dark:border-neutral-800 dark:bg-neutral-950">
+                      <div className="mb-2 flex items-center justify-between">
+                        <p className="text-sm font-medium">Partia {index + 1}</p>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-red-500"
+                          onClick={() => removeEditItemBatch(batch.id)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <Label className="text-sm">Ilosc</Label>
+                          <Input
+                            type="number"
+                            min="1"
+                            value={batch.quantity ?? ''}
+                            onChange={(e) => updateEditItemBatch(batch.id, { quantity: parseRequiredPositiveInt(e.target.value) })}
+                            className="h-11 rounded-xl"
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-sm">Data</Label>
+                          <Input
+                            type="date"
+                            value={formatDateInputValue(batch.expiryDate)}
+                            onChange={(e) => updateEditItemBatch(batch.id, { expiryDate: e.target.value || null })}
+                            className="h-11 rounded-xl"
+                          />
+                        </div>
+                      </div>
+                      <div className="mt-2">
+                        <Label className="text-sm">Notatka</Label>
+                        <Input
+                          placeholder="np. kupione w lipcu"
+                          value={batch.note || ''}
+                          onChange={(e) => updateEditItemBatch(batch.id, { note: e.target.value })}
+                          className="h-11 rounded-xl"
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             <div>

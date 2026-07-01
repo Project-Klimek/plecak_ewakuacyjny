@@ -60,8 +60,25 @@ model Item {
   
   // Relacje
   backpack     Backpack  @relation(fields: [backpackId], references: [id], onDelete: Cascade)
+  batches      ItemBatch[]
   
   @@index([backpackId])
+  @@index([expiryDate])
+}
+
+model ItemBatch {
+  id         String   @id @default(cuid())
+  itemId     String
+  quantity   Int      @default(1)
+  expiryDate DateTime?
+  note       String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  // Relacje
+  item       Item     @relation(fields: [itemId], references: [id], onDelete: Cascade)
+
+  @@index([itemId])
   @@index([expiryDate])
 }
 
