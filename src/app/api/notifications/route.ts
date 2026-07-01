@@ -8,7 +8,7 @@ const notificationActionSchema = z.object({
   notificationId: z.string().min(1).optional(),
   markAllRead: z.boolean().optional(),
 }).refine((data) => data.markAllRead || data.notificationId, {
-  message: 'Brak parametrow',
+  message: 'Brak parametrów',
 });
 
 export async function GET(request: NextRequest) {
@@ -87,5 +87,5 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: result.count > 0 });
   }
 
-  return NextResponse.json({ success: false, error: 'Brak parametrow' }, { status: 400 });
+  return NextResponse.json({ success: false, error: 'Brak parametrów' }, { status: 400 });
 }

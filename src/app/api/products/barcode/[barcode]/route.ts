@@ -86,7 +86,7 @@ export async function GET(
 
   if (barcode.length < 8 || barcode.length > 14) {
     return NextResponse.json(
-      { success: false, error: 'Nieprawidlowy kod kreskowy' },
+      { success: false, error: 'Nieprawidłowy kod kreskowy' },
       { status: 400 }
     );
   }
@@ -110,7 +110,7 @@ export async function GET(
 
     if (!response.ok) {
       return NextResponse.json(
-        { success: false, error: 'Nie udalo sie sprawdzic produktu' },
+        { success: false, error: 'Nie udało się sprawdzić produktu' },
         { status: 502 }
       );
     }
@@ -135,7 +135,7 @@ export async function GET(
   } catch (error) {
     console.error('Barcode lookup error:', error);
     return NextResponse.json(
-      { success: false, error: 'Wystapil blad podczas sprawdzania produktu' },
+      { success: false, error: 'Wystąpił błąd podczas sprawdzania produktu' },
       { status: 500 }
     );
   }

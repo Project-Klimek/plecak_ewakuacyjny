@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
 
     if (!limit.allowed) {
       return NextResponse.json(
-        { success: false, error: 'Za duzo prob logowania. Sprobuj ponownie za kilka minut.' },
+        { success: false, error: 'Za dużo prób logowania. Spróbuj ponownie za kilka minut.' },
         {
           status: 429,
           headers: { 'Retry-After': String(limit.retryAfterSeconds) },

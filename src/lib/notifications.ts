@@ -72,8 +72,8 @@ export async function checkExpiryDates() {
         data: {
           userId: item.backpack.userId,
           type: 'expiry_warning',
-          title: `Przedmiot konczy sie za ${days} dni`,
-          message: `"${item.name}"${batchText} w plecaku "${item.backpack.name}" konczy sie ${new Date(expiryDate!).toLocaleDateString('pl-PL')}`,
+          title: `Przedmiot kończy się za ${days} dni`,
+          message: `"${item.name}"${batchText} w plecaku "${item.backpack.name}" kończy się ${new Date(expiryDate!).toLocaleDateString('pl-PL')}`,
           itemId: item.id,
         },
       });
@@ -83,8 +83,8 @@ export async function checkExpiryDates() {
           data: {
             userId: share.userId,
             type: 'expiry_warning',
-            title: `Przedmiot konczy sie za ${days} dni`,
-            message: `"${item.name}"${batchText} w udostepnionym plecaku "${item.backpack.name}" konczy sie ${new Date(expiryDate!).toLocaleDateString('pl-PL')}`,
+            title: `Przedmiot kończy się za ${days} dni`,
+            message: `"${item.name}"${batchText} w udostępnionym plecaku "${item.backpack.name}" kończy się ${new Date(expiryDate!).toLocaleDateString('pl-PL')}`,
             itemId: item.id,
           },
         });

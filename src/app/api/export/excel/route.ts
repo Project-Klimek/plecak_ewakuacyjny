@@ -57,7 +57,7 @@ export async function POST(request: NextRequest) {
     
     if (!backpack) {
       return NextResponse.json(
-        { success: false, error: 'Plecak nie zostal znaleziony' },
+        { success: false, error: 'Plecak nie został znaleziony' },
         { status: 404 }
       );
     }
@@ -69,7 +69,7 @@ export async function POST(request: NextRequest) {
     
     if (!isOwner && !shared) {
       return NextResponse.json(
-        { success: false, error: 'Brak dostepu do tego plecaka' },
+        { success: false, error: 'Brak dostępu do tego plecaka' },
         { status: 403 }
       );
     }
@@ -78,7 +78,7 @@ export async function POST(request: NextRequest) {
       food: 'Jedzenie',
       water: 'Woda',
       medical: 'Apteczka',
-      tools: 'Narzedzia',
+      tools: 'Narzędzia',
       documents: 'Dokumenty',
       clothes: 'Ubrania',
       electronics: 'Elektronika',
@@ -99,7 +99,7 @@ export async function POST(request: NextRequest) {
         : '';
 
     const rows = [
-      csvRow(['Nazwa', 'Kategoria', 'Stan / cel', 'Data waznosci', 'Kod kreskowy', 'Notatki', 'Dodano']),
+      csvRow(['Nazwa', 'Kategoria', 'Stan / cel', 'Data ważności', 'Kod kreskowy', 'Notatki', 'Dodano']),
       ...backpack.items.map((item) =>
         csvRow([
           item.name,
@@ -112,7 +112,7 @@ export async function POST(request: NextRequest) {
         ])
       ),
       csvRow([
-        'RAZEM PRZEDMIOTOW:',
+        'RAZEM PRZEDMIOTÓW:',
         '',
         backpack.items.reduce((sum, item) => sum + item.quantity, 0),
         '',
@@ -124,10 +124,10 @@ export async function POST(request: NextRequest) {
       csvRow(['Informacje o plecaku', '']),
       csvRow(['Nazwa plecaka', backpack.name]),
       csvRow(['Opis', backpack.description || '']),
-      csvRow(['Wlasciciel', backpack.user.name || backpack.user.email]),
+      csvRow(['Właściciel', backpack.user.name || backpack.user.email]),
       csvRow(['Data utworzenia', new Date(backpack.createdAt).toLocaleDateString('pl-PL')]),
       csvRow(['Ostatnia aktualizacja', new Date(backpack.updatedAt).toLocaleDateString('pl-PL')]),
-      csvRow(['Liczba przedmiotow', backpack.items.length]),
+      csvRow(['Liczba przedmiotów', backpack.items.length]),
       csvRow(['Suma sztuk', backpack.items.reduce((sum, item) => sum + item.quantity, 0)]),
     ];
 
@@ -143,7 +143,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Export CSV error:', error);
     return NextResponse.json(
-      { success: false, error: 'Wystapil blad podczas eksportu CSV' },
+      { success: false, error: 'Wystąpił błąd podczas eksportu CSV' },
       { status: 500 }
     );
   }

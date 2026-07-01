@@ -5,8 +5,8 @@ import { readValidatedJson } from '@/lib/api-validation';
 import { z } from 'zod';
 
 const importantInfoSchema = z.object({
-  title: z.string().trim().min(1, 'Tytul jest wymagany').max(120, 'Tytul jest za dlugi'),
-  content: z.string().trim().min(1, 'Tresc jest wymagana').max(3000, 'Tresc jest za dluga'),
+  title: z.string().trim().min(1, 'Tytuł jest wymagany').max(120, 'Tytuł jest za długi'),
+  content: z.string().trim().min(1, 'Treść jest wymagana').max(3000, 'Treść jest za długa'),
 });
 
 export async function GET() {
@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Create important info error:', error);
     return NextResponse.json(
-      { success: false, error: 'Wystapil blad podczas zapisywania informacji' },
+      { success: false, error: 'Wystąpił błąd podczas zapisywania informacji' },
       { status: 500 }
     );
   }

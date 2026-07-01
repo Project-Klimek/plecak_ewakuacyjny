@@ -17,7 +17,7 @@ export async function readValidatedJson<TSchema extends z.ZodType>(
     return {
       ok: false,
       response: NextResponse.json(
-        { success: false, error: 'Nieprawidlowy format danych' },
+        { success: false, error: 'Nieprawidłowy format danych' },
         { status: 400 }
       ),
     };

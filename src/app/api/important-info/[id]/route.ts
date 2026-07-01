@@ -25,7 +25,7 @@ export async function DELETE(
 
   if (result.count === 0) {
     return NextResponse.json(
-      { success: false, error: 'Informacja nie zostala znaleziona' },
+      { success: false, error: 'Informacja nie została znaleziona' },
       { status: 404 }
     );
   }

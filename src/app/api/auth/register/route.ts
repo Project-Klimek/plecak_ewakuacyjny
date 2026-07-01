@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
 
     if (!limit.allowed) {
       return NextResponse.json(
-        { success: false, error: 'Za duzo prob rejestracji. Sprobuj ponownie za kilka minut.' },
+        { success: false, error: 'Za dużo prób rejestracji. Spróbuj ponownie za kilka minut.' },
         {
           status: 429,
           headers: { 'Retry-After': String(limit.retryAfterSeconds) },

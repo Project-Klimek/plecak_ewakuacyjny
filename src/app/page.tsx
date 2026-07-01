@@ -96,10 +96,10 @@ const backpackColors = [
 type BackpackAudience = 'adult' | 'child' | 'pet' | 'dependent';
 
 const backpackAudiences: { value: BackpackAudience; label: string; description: string; icon: React.ReactNode }[] = [
-  { value: 'adult', label: 'Dorosly', description: 'Standardowy plecak 72h', icon: <BackpackIcon className="h-4 w-4" /> },
+  { value: 'adult', label: 'Dorosły', description: 'Standardowy plecak 72h', icon: <BackpackIcon className="h-4 w-4" /> },
   { value: 'child', label: 'Dziecko', description: 'Plecak dla dziecka', icon: <Shirt className="h-4 w-4" /> },
-  { value: 'pet', label: 'Zwierzak', description: 'Rzeczy dla zwierzecia', icon: <Package className="h-4 w-4" /> },
-  { value: 'dependent', label: 'Opieka', description: 'Osoba pod opieka', icon: <Heart className="h-4 w-4" /> },
+  { value: 'pet', label: 'Zwierzak', description: 'Rzeczy dla zwierzęcia', icon: <Package className="h-4 w-4" /> },
+  { value: 'dependent', label: 'Opieka', description: 'Osoba pod opieką', icon: <Heart className="h-4 w-4" /> },
 ];
 
 type ViewState = 'backpacks' | 'categories' | 'items' | 'deadlines' | 'shopping' | 'info';
@@ -142,15 +142,15 @@ const GENERAL_IMPORTANT_INFO = [
   },
   {
     title: 'Dokumenty i kopie',
-    content: 'Trzymaj kopie dokumentow, polis, recept i waznych numerow w wodoszczelnej kopercie oraz w bezpiecznej kopii cyfrowej.',
+    content: 'Trzymaj kopie dokumentów, polis, recept i ważnych numerów w wodoszczelnej kopercie oraz w bezpiecznej kopii cyfrowej.',
   },
   {
     title: 'Zdrowie',
-    content: 'Zapisz leki stale, dawki, alergie, choroby przewlekle oraz kontakt do lekarza. To moze byc kluczowe przy udzielaniu pomocy.',
+    content: 'Zapisz leki stałe, dawki, alergie, choroby przewlekłe oraz kontakt do lekarza. To może być kluczowe przy udzielaniu pomocy.',
   },
   {
     title: 'Dom i media',
-    content: 'Zapisz, gdzie sa zawory wody, gazu, bezpieczniki, latarka awaryjna i zapasowe klucze.',
+    content: 'Zapisz, gdzie są zawory wody, gazu, bezpieczniki, latarka awaryjna i zapasowe klucze.',
   },
 ];
 
@@ -177,66 +177,66 @@ type StarterChecklistItem = {
 };
 
 const BASE_STARTER_CHECKLIST: StarterChecklistItem[] = [
-  { name: 'Woda butelkowana 1,5 l', category: 'water', quantity: 3, notes: 'Minimum 9 l na osobe na 72h. Do plecaka wez 2-3 butelki 1,5 l na start; reszte transportuj osobno, jesli masz samochod.' },
+  { name: 'Woda butelkowana 1,5 l', category: 'water', quantity: 3, notes: 'Minimum 9 l na osobę na 72h. Do plecaka weź 2-3 butelki 1,5 l na start; resztę transportuj osobno, jeśli masz samochód.' },
   { name: 'Tabletki do uzdatniania wody', category: 'water', quantity: 1, notes: 'Do awaryjnego uzdatniania wody.' },
-  { name: 'Konserwy', category: 'food', quantity: 3, notes: 'Mieso, ryby, gulasz lub podobne gotowe jedzenie.' },
-  { name: 'Batony energetyczne', category: 'food', quantity: 6, notes: 'Szybki zapas energii, najlepiej batony zbozowe lub energetyczne.' },
-  { name: 'Posilki suszone lub liofilizowane', category: 'food', quantity: 3, notes: 'Lekkie posilki awaryjne, np. zupy instant lub dania liofilizowane.' },
-  { name: 'Czekolada lub karmelki', category: 'food', quantity: 1, notes: 'Szybkie zrodlo energii i poprawa nastroju.' },
-  { name: 'Otwieracz do konserw', category: 'tools', quantity: 1, notes: 'Kluczowy, jesli w plecaku sa puszki.' },
+  { name: 'Konserwy', category: 'food', quantity: 3, notes: 'Mięso, ryby, gulasz lub podobne gotowe jedzenie.' },
+  { name: 'Batony energetyczne', category: 'food', quantity: 6, notes: 'Szybki zapas energii, najlepiej batony zbożowe lub energetyczne.' },
+  { name: 'Posiłki suszone lub liofilizowane', category: 'food', quantity: 3, notes: 'Lekkie posiłki awaryjne, np. zupy instant lub dania liofilizowane.' },
+  { name: 'Czekolada lub karmelki', category: 'food', quantity: 1, notes: 'Szybkie źródło energii i poprawa nastroju.' },
+  { name: 'Otwieracz do konserw', category: 'tools', quantity: 1, notes: 'Kluczowy, jeśli w plecaku są puszki.' },
   { name: 'Kubek, talerz i sztucce', category: 'tools', quantity: 1, notes: 'Najlepiej plastikowe lub metalowe, wielorazowe.' },
-  { name: 'Apteczka pierwszej pomocy', category: 'medical', quantity: 1, notes: 'Plastry, bandaz elastyczny, srodek do dezynfekcji ran i podstawowe opatrunki.' },
-  { name: 'Leki stale', category: 'medical', quantity: 1, notes: 'Zapas minimum na 3-5 dni, szczegolnie przy chorobach przewleklych.' },
-  { name: 'Leki przeciwbolowe', category: 'medical', quantity: 1, notes: 'Np. paracetamol lub ibuprofen, zgodnie z potrzebami domownikow.' },
-  { name: 'Mydlo', category: 'medical', quantity: 1, notes: 'Mydlo w plynie lub kostka.' },
-  { name: 'Plyn do dezynfekcji rak', category: 'medical', quantity: 1, notes: 'Maly pojemnik do plecaka.' },
-  { name: 'Recznik papierowy lub sciereczki', category: 'medical', quantity: 1, notes: 'Mala rolka albo sciereczki wielorazowe.' },
-  { name: 'Pasta i szczoteczka do zebow', category: 'medical', quantity: 1, notes: 'Podstawowa higiena na 72h.' },
-  { name: 'Papier toaletowy', category: 'medical', quantity: 4, notes: 'Np. mala zgrzewka 4 rolek.' },
-  { name: 'Latarka czolowa', category: 'tools', quantity: 1, notes: 'Czolowa zostawia wolne rece; dodaj zapas baterii.' },
-  { name: 'Zapas baterii', category: 'electronics', quantity: 1, notes: 'Do latarki, radia i innych urzadzen.' },
-  { name: 'Radio przenosne', category: 'electronics', quantity: 1, notes: 'Najlepiej na korbke lub z panelem slonecznym, do odbioru komunikatow.' },
-  { name: 'Zapalki lub zapalniczka', category: 'tools', quantity: 1, notes: 'Trzymaj w wodoszczelnym opakowaniu.' },
-  { name: 'Noz wielofunkcyjny lub scyzoryk', category: 'tools', quantity: 1, notes: 'Do napraw, przygotowania jedzenia i drobnych prac.' },
+  { name: 'Apteczka pierwszej pomocy', category: 'medical', quantity: 1, notes: 'Plastry, bandaż elastyczny, środek do dezynfekcji ran i podstawowe opatrunki.' },
+  { name: 'Leki stałe', category: 'medical', quantity: 1, notes: 'Zapas minimum na 3-5 dni, szczególnie przy chorobach przewlekłych.' },
+  { name: 'Leki przeciwbólowe', category: 'medical', quantity: 1, notes: 'Np. paracetamol lub ibuprofen, zgodnie z potrzebami domowników.' },
+  { name: 'Mydło', category: 'medical', quantity: 1, notes: 'Mydło w płynie lub kostka.' },
+  { name: 'Płyn do dezynfekcji rąk', category: 'medical', quantity: 1, notes: 'Mały pojemnik do plecaka.' },
+  { name: 'Ręcznik papierowy lub ściereczki', category: 'medical', quantity: 1, notes: 'Mała rolka albo ściereczki wielorazowe.' },
+  { name: 'Pasta i szczoteczka do zębów', category: 'medical', quantity: 1, notes: 'Podstawowa higiena na 72h.' },
+  { name: 'Papier toaletowy', category: 'medical', quantity: 4, notes: 'Np. mała zgrzewka 4 rolek.' },
+  { name: 'Latarka czołowa', category: 'tools', quantity: 1, notes: 'Czołowa zostawia wolne ręce; dodaj zapas baterii.' },
+  { name: 'Zapas baterii', category: 'electronics', quantity: 1, notes: 'Do latarki, radia i innych urządzeń.' },
+  { name: 'Radio przenośne', category: 'electronics', quantity: 1, notes: 'Najlepiej na korbkę lub z panelem słonecznym, do odbioru komunikatów.' },
+  { name: 'Zapałki lub zapalniczka', category: 'tools', quantity: 1, notes: 'Trzymaj w wodoszczelnym opakowaniu.' },
+  { name: 'Nóż wielofunkcyjny lub scyzoryk', category: 'tools', quantity: 1, notes: 'Do napraw, przygotowania jedzenia i drobnych prac.' },
   { name: 'Kompas', category: 'tools', quantity: 1, notes: 'Awaryjna orientacja w terenie.' },
-  { name: 'Tasma klejaca srebrna', category: 'tools', quantity: 1, notes: 'Uniwersalna do napraw i zabezpieczania.' },
-  { name: 'Folia NRC', category: 'tools', quantity: 1, notes: 'Koc ratunkowy chroni przed utrata ciepla i zajmuje malo miejsca.' },
-  { name: 'Gotowka', category: 'documents', quantity: 1, notes: 'Male nominaly, kwota na 3 dni pobytu i podstawowe zakupy.' },
-  { name: 'Kserokopie dokumentow', category: 'documents', quantity: 1, notes: 'Dowod, paszport, polisy, numery kont - w wodoszczelnej torebce.' },
-  { name: 'Spis telefonow', category: 'documents', quantity: 1, notes: 'Telefony do bliskich, lekarzy i sluzb ratunkowych na kartce.' },
-  { name: 'Solidne buty', category: 'clothes', quantity: 1, notes: 'Wygodne, najlepiej za kostke.' },
+  { name: 'Taśma klejąca srebrna', category: 'tools', quantity: 1, notes: 'Uniwersalna do napraw i zabezpieczania.' },
+  { name: 'Folia NRC', category: 'tools', quantity: 1, notes: 'Koc ratunkowy chroni przed utratą ciepła i zajmuje mało miejsca.' },
+  { name: 'Gotówka', category: 'documents', quantity: 1, notes: 'Małe nominały, kwota na 3 dni pobytu i podstawowe zakupy.' },
+  { name: 'Kserokopie dokumentów', category: 'documents', quantity: 1, notes: 'Dowód, paszport, polisy, numery kont - w wodoszczelnej torebce.' },
+  { name: 'Spis telefonów', category: 'documents', quantity: 1, notes: 'Telefony do bliskich, lekarzy i służb ratunkowych na kartce.' },
+  { name: 'Solidne buty', category: 'clothes', quantity: 1, notes: 'Wygodne, najlepiej za kostkę.' },
   { name: 'Bielizna i skarpety', category: 'clothes', quantity: 4, notes: '3-4 pary skarpetek oraz bielizna osobista.' },
-  { name: 'Ubranie zapasowe', category: 'clothes', quantity: 1, notes: 'Dluga koszula i spodnie, najlepiej szybkoschnace.' },
+  { name: 'Ubranie zapasowe', category: 'clothes', quantity: 1, notes: 'Długa koszula i spodnie, najlepiej szybkoschnące.' },
   { name: 'Kurtka przeciwdeszczowa lub peleryna', category: 'clothes', quantity: 1, notes: 'Ochrona przed deszczem i wiatrem.' },
-  { name: 'Czapka', category: 'clothes', quantity: 1, notes: 'Dostosuj do pory roku: zimowa albo przeciwsloneczna.' },
-  { name: 'Rekawice robocze', category: 'clothes', quantity: 1, notes: 'Do ochrony dloni przy przenoszeniu i pracy.' },
+  { name: 'Czapka', category: 'clothes', quantity: 1, notes: 'Dostosuj do pory roku: zimowa albo przeciwsłoneczna.' },
+  { name: 'Rękawice robocze', category: 'clothes', quantity: 1, notes: 'Do ochrony dłoni przy przenoszeniu i pracy.' },
   { name: 'Biblia drukowana', category: 'documents', quantity: 1, notes: 'Male wydanie drukowane.' },
-  { name: 'Telefon z ladowarka', category: 'electronics', quantity: 1, notes: 'Naladowany telefon, ladowarka, przydatna aplikacja JW Library.' },
-  { name: 'Powerbank', category: 'electronics', quantity: 1, notes: 'Naladowany, do telefonu i drobnej elektroniki.' },
+  { name: 'Telefon z ładowarką', category: 'electronics', quantity: 1, notes: 'Naładowany telefon, ładowarka, przydatna aplikacja JW Library.' },
+  { name: 'Powerbank', category: 'electronics', quantity: 1, notes: 'Naładowany, do telefonu i drobnej elektroniki.' },
 ];
 
 const AUDIENCE_STARTER_ADDITIONS: Record<BackpackAudience, StarterChecklistItem[]> = {
   adult: [],
   child: [
     { name: 'Mleko modyfikowane lub kaszki', category: 'food', quantity: 1, notes: 'Zapas na 3 dni, dopasowany do wieku dziecka.' },
-    { name: 'Pieluchy jednorazowe', category: 'other', quantity: 20, notes: 'Ok. 15-20 sztuk na 3 dni, jesli dziecko ich uzywa.' },
-    { name: 'Chusteczki nawilzane', category: 'medical', quantity: 1, notes: 'Do higieny dziecka i szybkiego oczyszczania rak.' },
-    { name: 'Ulubiona zabawka lub pluszak', category: 'other', quantity: 1, notes: 'Pomaga dziecku uspokoic sie w stresie.' },
-    { name: 'Karta danych dziecka', category: 'documents', quantity: 1, notes: 'Imie, alergie, leki, kontakt do opiekunow i zgoda/opis potrzeb zdrowotnych.' },
+    { name: 'Pieluchy jednorazowe', category: 'other', quantity: 20, notes: 'Ok. 15-20 sztuk na 3 dni, jeśli dziecko ich używa.' },
+    { name: 'Chusteczki nawilżane', category: 'medical', quantity: 1, notes: 'Do higieny dziecka i szybkiego oczyszczania rąk.' },
+    { name: 'Ulubiona zabawka lub pluszak', category: 'other', quantity: 1, notes: 'Pomaga dziecku uspokoić się w stresie.' },
+    { name: 'Karta danych dziecka', category: 'documents', quantity: 1, notes: 'Imię, alergie, leki, kontakt do opiekunów i zgoda/opis potrzeb zdrowotnych.' },
   ],
   pet: [
     { name: 'Karma dla zwierzaka', category: 'food', quantity: 1, notes: 'Porcje na minimum 3 dni, najlepiej w szczelnym opakowaniu.' },
     { name: 'Miska skladana', category: 'water', quantity: 1, notes: 'Do wody i karmy w drodze.' },
-    { name: 'Smycz, szelki lub kaganiec', category: 'tools', quantity: 1, notes: 'Dopasuj do zwierzecia i lokalnych wymagan transportu.' },
-    { name: 'Transporter lub worek transportowy', category: 'other', quantity: 1, notes: 'Bezpieczny transport zwierzecia podczas ewakuacji.' },
-    { name: 'Dokumenty i ksiazeczka zdrowia zwierzaka', category: 'documents', quantity: 1, notes: 'Szczepienia, chip, kontakt do weterynarza i numer wlasciciela.' },
+    { name: 'Smycz, szelki lub kaganiec', category: 'tools', quantity: 1, notes: 'Dopasuj do zwierzęcia i lokalnych wymagań transportu.' },
+    { name: 'Transporter lub worek transportowy', category: 'other', quantity: 1, notes: 'Bezpieczny transport zwierzęcia podczas ewakuacji.' },
+    { name: 'Dokumenty i książeczka zdrowia zwierzaka', category: 'documents', quantity: 1, notes: 'Szczepienia, chip, kontakt do weterynarza i numer właściciela.' },
     { name: 'Woreczki lub podklady higieniczne', category: 'medical', quantity: 1, notes: 'Do utrzymania higieny podczas drogi i postoju.' },
   ],
   dependent: [
-    { name: 'Rozpiska lekow i dawkowania', category: 'medical', quantity: 1, notes: 'Aktualna lista lekow, dawki, godziny podawania, alergie i choroby przewlekle.' },
-    { name: 'Dokumentacja medyczna', category: 'documents', quantity: 1, notes: 'Kopie wypisow, recept, orzeczen, danych lekarza i numerow alarmowych.' },
-    { name: 'Zapas srodkow higienicznych', category: 'medical', quantity: 1, notes: 'Podklady, pieluchomajtki, rekawiczki, chusteczki lub inne potrzebne srodki.' },
-    { name: 'Sprzet pomocniczy', category: 'tools', quantity: 1, notes: 'Okulary, aparat sluchowy, baterie, laska, drobne elementy zapasowe.' },
+    { name: 'Rozpiska leków i dawkowania', category: 'medical', quantity: 1, notes: 'Aktualna lista leków, dawki, godziny podawania, alergie i choroby przewlekłe.' },
+    { name: 'Dokumentacja medyczna', category: 'documents', quantity: 1, notes: 'Kopie wypisów, recept, orzeczeń, danych lekarza i numerów alarmowych.' },
+    { name: 'Zapas środków higienicznych', category: 'medical', quantity: 1, notes: 'Podkłady, pieluchomajtki, rękawiczki, chusteczki lub inne potrzebne środki.' },
+    { name: 'Sprzęt pomocniczy', category: 'tools', quantity: 1, notes: 'Okulary, aparat słuchowy, baterie, laska, drobne elementy zapasowe.' },
     { name: 'Karta opiekuna', category: 'documents', quantity: 1, notes: 'Dane opiekuna, relacja, telefony kontaktowe i informacje o codziennej pomocy.' },
   ],
 };
@@ -395,9 +395,9 @@ export default function Page() {
       return <Badge className="bg-red-100 text-red-700 dark:bg-red-800 dark:text-red-200 text-xs">Po terminie</Badge>;
     }
     if (source === 'expiring') {
-      return <Badge className="bg-amber-100 text-amber-700 dark:bg-amber-800 dark:text-amber-200 text-xs">Konczy sie</Badge>;
+      return <Badge className="bg-amber-100 text-amber-700 dark:bg-amber-800 dark:text-amber-200 text-xs">Kończy się</Badge>;
     }
-    return <Badge className="bg-blue-100 text-blue-700 dark:bg-blue-800 dark:text-blue-200 text-xs">Recznie</Badge>;
+    return <Badge className="bg-blue-100 text-blue-700 dark:bg-blue-800 dark:text-blue-200 text-xs">Ręcznie</Badge>;
   };
 
   const getItemQuantityLabel = (item: Item) => {
@@ -503,13 +503,13 @@ export default function Page() {
         await clearPendingChanges();
         await refreshPendingSyncCount();
         await setLastSync(new Date());
-        toast({ title: 'Synchronizacja', description: 'Zmiany offline zostaly wyslane' });
+        toast({ title: 'Synchronizacja', description: 'Zmiany offline zostały wysłane' });
         return true;
       }
 
       toast({
         title: 'Synchronizacja',
-        description: 'Nie wszystkie zmiany offline zostaly wyslane',
+        description: 'Nie wszystkie zmiany offline zostały wysłane',
         variant: 'destructive',
       });
       return false;
@@ -751,7 +751,7 @@ export default function Page() {
 
   const handleManualSync = async () => {
     if (!isBrowserOnline()) {
-      toast({ title: 'Offline', description: 'Polacz sie z internetem, aby wyslac zmiany' });
+      toast({ title: 'Offline', description: 'Połącz się z internetem, aby wysłać zmiany' });
       return;
     }
 
@@ -776,10 +776,10 @@ export default function Page() {
         await loadData();
         setLoginForm({ email: '', password: '' });
       } else {
-        toast({ title: 'Blad', description: response.error || 'Nie udalo sie zalogowac', variant: 'destructive' });
+        toast({ title: 'Błąd', description: response.error || 'Nie udało się zalogować', variant: 'destructive' });
       }
     } catch {
-      toast({ title: 'Blad', description: 'Wystapil blad podczas logowania', variant: 'destructive' });
+      toast({ title: 'Błąd', description: 'Wystąpił błąd podczas logowania', variant: 'destructive' });
     } finally {
       setLoading(false);
     }
@@ -795,10 +795,10 @@ export default function Page() {
         await loadData();
         setRegisterForm({ email: '', password: '', name: '' });
       } else {
-        toast({ title: 'Blad', description: response.error || 'Nie udalo sie zarejestrowac', variant: 'destructive' });
+        toast({ title: 'Błąd', description: response.error || 'Nie udało się zarejestrować', variant: 'destructive' });
       }
     } catch {
-      toast({ title: 'Blad', description: 'Wystapil blad podczas rejestracji', variant: 'destructive' });
+      toast({ title: 'Błąd', description: 'Wystąpił błąd podczas rejestracji', variant: 'destructive' });
     } finally {
       setLoading(false);
     }
@@ -934,7 +934,7 @@ export default function Page() {
         toast({
           title: 'Sukces',
           description: shouldAddStarterChecklist
-            ? 'Plecak utworzony z checklista 72h'
+            ? 'Plecak utworzony z checklistą 72h'
             : 'Plecak utworzony!',
         });
       } else {
@@ -942,7 +942,7 @@ export default function Page() {
         if (shouldAddStarterChecklist) {
           await createStarterChecklistItems(localBackpack.id, selectedAudience, 'queued');
         }
-        toast({ title: 'Sukces', description: 'Plecak utworzony lokalnie, zsynchronizuje sie pozniej' });
+        toast({ title: 'Sukces', description: 'Plecak utworzony lokalnie, zsynchronizuje się później' });
       }
     } catch {
       await queueOfflineChange('create_backpack', localBackpack as unknown as Record<string, unknown>);
@@ -969,7 +969,7 @@ export default function Page() {
     removeBackpack(id);
     await deleteBackpackLocal(id);
     setDeleteConfirm(null);
-    toast({ title: 'Usunieto', description: 'Plecak zostal usuniety' });
+    toast({ title: 'Usunięto', description: 'Plecak został usunięty' });
   };
 
   const handleCreateItem = async () => {
@@ -1031,7 +1031,7 @@ export default function Page() {
         toast({ title: 'Dodano!', description: 'Przedmiot dodany do plecaka' });
       } else {
         await queueOfflineChange('create_item', localItem as unknown as Record<string, unknown>);
-        toast({ title: 'Blad', description: response.error || 'Nie udalo sie dodac przedmiotu', variant: 'destructive' });
+        toast({ title: 'Błąd', description: response.error || 'Nie udało się dodać przedmiotu', variant: 'destructive' });
       }
     } catch {
       await queueOfflineChange('create_item', localItem as unknown as Record<string, unknown>);
@@ -1125,11 +1125,11 @@ export default function Page() {
         toast({ title: 'Zapisano', description: 'Przedmiot zaktualizowany' });
       } else {
         await queueOfflineChange('update_item', { id: editingItem.id, ...updatePayload });
-        toast({ title: 'Zapisano lokalnie', description: 'Zmiana zsynchronizuje sie pozniej' });
+        toast({ title: 'Zapisano lokalnie', description: 'Zmiana zsynchronizuje się później' });
       }
     } catch {
       await queueOfflineChange('update_item', { id: editingItem.id, ...updatePayload });
-      toast({ title: 'Zapisano lokalnie', description: 'Zmiana zsynchronizuje sie pozniej' });
+      toast({ title: 'Zapisano lokalnie', description: 'Zmiana zsynchronizuje się później' });
     }
   };
 
@@ -1148,7 +1148,7 @@ export default function Page() {
     }
     removeItem(id);
     await deleteItemLocal(id);
-    toast({ title: 'Usunieto', description: 'Przedmiot usuniety' });
+    toast({ title: 'Usunięto', description: 'Przedmiot usunięty' });
   };
 
   const toggleShoppingItem = (id: string) => {
@@ -1183,7 +1183,7 @@ export default function Page() {
     setShoppingList(prev => [...prev, item]);
     setNewShoppingItem({ name: '', quantity: 1, category: 'other' });
     setShowAddShoppingItem(false);
-    toast({ title: 'Dodano', description: 'Pozycja dodana do listy zakupow' });
+    toast({ title: 'Dodano', description: 'Pozycja dodana do listy zakupów' });
   };
 
   const clearCheckedShoppingItems = () => {
@@ -1196,7 +1196,7 @@ export default function Page() {
     }
 
     setShoppingList(prev => prev.filter(item => !item.checked));
-    toast({ title: 'Wyczyszczono', description: 'Kupione pozycje usuniete z listy' });
+    toast({ title: 'Wyczyszczono', description: 'Kupione pozycje usunięte z listy' });
   };
 
   const exportShoppingList = () => {
@@ -1206,7 +1206,7 @@ export default function Page() {
         return `${item.checked ? '[x]' : '[ ]'} ${item.name} x${item.quantity} (${category})`;
       })
       .join('\n');
-    const blob = new Blob([`Lista zakupow - ${new Date().toLocaleDateString('pl-PL')}\n\n${text}`], { type: 'text/plain' });
+    const blob = new Blob([`Lista zakupów - ${new Date().toLocaleDateString('pl-PL')}\n\n${text}`], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
@@ -1215,7 +1215,7 @@ export default function Page() {
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
-    toast({ title: 'Wyeksportowano', description: 'Lista zakupow pobrana' });
+    toast({ title: 'Wyeksportowano', description: 'Lista zakupów pobrana' });
   };
 
   const printEmergencyReport = () => {
@@ -1279,12 +1279,12 @@ export default function Page() {
           </tr>
         `;
         }).join('')
-        : '<tr><td colspan="6" class="muted">Brak przedmiotow</td></tr>';
+        : '<tr><td colspan="6" class="muted">Brak przedmiotów</td></tr>';
 
       return `
         <section>
           <h2>${escapeHtml(backpack.name)}</h2>
-          <p class="muted">${escapeHtml(audience.label)}${isShared ? ' | Udostepniony' : ''}${backpack.description ? ` | ${escapeHtml(backpack.description)}` : ''}</p>
+          <p class="muted">${escapeHtml(audience.label)}${isShared ? ' | Udostępniony' : ''}${backpack.description ? ` | ${escapeHtml(backpack.description)}` : ''}</p>
           <table>
             <thead>
               <tr><th>Przedmiot</th><th>Kategoria</th><th>Stan / cel</th><th>Data</th><th>Status</th><th>Notatki</th></tr>
@@ -1304,7 +1304,7 @@ export default function Page() {
           <td>${escapeHtml(item.quantity)}</td>
         </tr>
       `).join('')
-      : '<tr><td colspan="4" class="muted">Lista zakupow jest pusta</td></tr>';
+      : '<tr><td colspan="4" class="muted">Lista zakupów jest pusta</td></tr>';
 
     const generalInfo = GENERAL_IMPORTANT_INFO.map(info => `
       <article class="note">
@@ -1320,7 +1320,7 @@ export default function Page() {
           <p>${escapeHtml(note.content)}</p>
         </article>
       `).join('')
-      : '<p class="muted">Brak wlasnych informacji.</p>';
+      : '<p class="muted">Brak własnych informacji.</p>';
 
     const reportHtml = `<!doctype html>
       <html lang="pl">
@@ -1366,22 +1366,22 @@ export default function Page() {
           </div>
           <section>
             <h2>Plecaki i przedmioty</h2>
-            ${backpackSections || '<p class="muted">Brak plecakow.</p>'}
+            ${backpackSections || '<p class="muted">Brak plecaków.</p>'}
           </section>
           <section>
-            <h2>Lista zakupow</h2>
+            <h2>Lista zakupów</h2>
             <p class="muted">Do kupienia: ${escapeHtml(openShoppingCount)} | Odhaczone: ${escapeHtml(checkedShoppingCount)}</p>
             <table>
-              <thead><tr><th>Status</th><th>Pozycja</th><th>Kategoria</th><th>Ilosc</th></tr></thead>
+              <thead><tr><th>Status</th><th>Pozycja</th><th>Kategoria</th><th>Ilość</th></tr></thead>
               <tbody>${shoppingRows}</tbody>
             </table>
           </section>
           <section>
-            <h2>Wazne informacje ogolne</h2>
+            <h2>Ważne informacje ogólne</h2>
             ${generalInfo}
           </section>
           <section>
-            <h2>Moje wazne informacje</h2>
+            <h2>Moje ważne informacje</h2>
             ${personalInfo}
           </section>
         </body>
@@ -1389,7 +1389,7 @@ export default function Page() {
 
     const printWindow = window.open('', '_blank');
     if (!printWindow) {
-      toast({ title: 'Blad', description: 'Przegladarka zablokowala okno drukowania', variant: 'destructive' });
+      toast({ title: 'Błąd', description: 'Przeglądarka zablokowała okno drukowania', variant: 'destructive' });
       return;
     }
 
@@ -1416,7 +1416,7 @@ export default function Page() {
 
     if (!isBrowserOnline()) {
       setImportantNotes(prev => [localNote, ...prev]);
-      toast({ title: 'Dodano lokalnie', description: 'Informacja zapisze sie na serwerze po synchronizacji' });
+      toast({ title: 'Dodano lokalnie', description: 'Informacja zapisze się na serwerze po synchronizacji' });
       return;
     }
 
@@ -1428,14 +1428,14 @@ export default function Page() {
 
       if (response.success && response.data) {
         setImportantNotes(prev => [response.data!, ...prev]);
-        toast({ title: 'Dodano', description: 'Informacja zostala zapisana' });
+        toast({ title: 'Dodano', description: 'Informacja została zapisana' });
       } else {
         setImportantNotes(prev => [localNote, ...prev]);
-        toast({ title: 'Dodano lokalnie', description: response.error || 'Serwer zapisze informacje pozniej' });
+        toast({ title: 'Dodano lokalnie', description: response.error || 'Serwer zapisze informacje później' });
       }
     } catch {
       setImportantNotes(prev => [localNote, ...prev]);
-      toast({ title: 'Dodano lokalnie', description: 'Informacja zapisze sie na serwerze pozniej' });
+      toast({ title: 'Dodano lokalnie', description: 'Informacja zapisze się na serwerze później' });
     }
   };
 
@@ -1445,11 +1445,11 @@ export default function Page() {
     if (!isBrowserOnline()) {
       if (noteToRemove && !noteToRemove.userId) {
         setImportantNotes(prev => prev.filter(note => note.id !== id));
-        toast({ title: 'Usunieto', description: 'Lokalna informacja zostala usunieta' });
+        toast({ title: 'Usunięto', description: 'Lokalna informacja została usunięta' });
         return;
       }
 
-      toast({ title: 'Offline', description: 'Polacz sie z internetem, aby usunac informacje' });
+      toast({ title: 'Offline', description: 'Połącz się z internetem, aby usunąć informacje' });
       return;
     }
 
@@ -1459,14 +1459,14 @@ export default function Page() {
     try {
       const response = await importantInfoApi.delete(id);
       if (response.success) {
-        toast({ title: 'Usunieto', description: 'Informacja zostala usunieta' });
+        toast({ title: 'Usunięto', description: 'Informacja została usunięta' });
       } else {
         setImportantNotes(previousNotes);
-        toast({ title: 'Blad', description: response.error || 'Nie udalo sie usunac informacji', variant: 'destructive' });
+        toast({ title: 'Błąd', description: response.error || 'Nie udało się usunąć informacji', variant: 'destructive' });
       }
     } catch {
       setImportantNotes(previousNotes);
-      toast({ title: 'Blad', description: 'Nie udalo sie usunac informacji', variant: 'destructive' });
+      toast({ title: 'Błąd', description: 'Nie udało się usunąć informacji', variant: 'destructive' });
     }
   };
 
@@ -1491,7 +1491,7 @@ export default function Page() {
         notes: prev.notes || details || prev.notes,
       }));
 
-      toast({ title: 'Produkt znaleziony', description: productName || 'Uzupelniono dane z kodu kreskowego' });
+      toast({ title: 'Produkt znaleziony', description: productName || 'Uzupełniono dane z kodu kreskowego' });
       return true;
     } catch {
       return false;
@@ -1523,7 +1523,7 @@ export default function Page() {
       reader.readAsDataURL(file);
     } catch {
       setScanning(false);
-      toast({ title: 'Blad', description: 'Nie udalo sie rozpoznac', variant: 'destructive' });
+      toast({ title: 'Błąd', description: 'Nie udało się rozpoznać', variant: 'destructive' });
     }
   }, [enrichItemFromBarcode]);
 
@@ -1533,7 +1533,7 @@ export default function Page() {
       await exportApi.exportPdf(selectedBackpackId);
       toast({ title: 'Pobrano PDF' });
     } catch {
-      toast({ title: 'Blad', description: 'Eksport nieudany', variant: 'destructive' });
+      toast({ title: 'Błąd', description: 'Eksport nieudany', variant: 'destructive' });
     }
   };
 
@@ -1543,7 +1543,7 @@ export default function Page() {
       await exportApi.exportCsv(selectedBackpackId);
       toast({ title: 'Pobrano CSV' });
     } catch {
-      toast({ title: 'Blad', description: 'Eksport nieudany', variant: 'destructive' });
+      toast({ title: 'Błąd', description: 'Eksport nieudany', variant: 'destructive' });
     }
   };
 
@@ -1574,7 +1574,7 @@ export default function Page() {
         <div className="text-center text-white">
           <BackpackIcon className="h-20 w-20 mx-auto animate-bounce" />
           <p className="mt-6 text-xl font-semibold">Plecak Ewakuacyjny</p>
-          <p className="mt-2 opacity-80">Ladowanie...</p>
+          <p className="mt-2 opacity-80">Ładowanie...</p>
         </div>
       </div>
     );
@@ -1589,7 +1589,7 @@ export default function Page() {
               <BackpackIcon className="h-14 w-14 text-orange-500" />
             </div>
             <h1 className="mt-6 text-2xl font-bold text-white">Plecak Ewakuacyjny</h1>
-            <p className="text-white/80 mt-2">Zarzadzaj swoim plecakiem offline</p>
+            <p className="text-white/80 mt-2">Zarządzaj swoim plecakiem offline</p>
           </div>
 
           <Card className="rounded-3xl shadow-2xl overflow-hidden">
@@ -1607,7 +1607,7 @@ export default function Page() {
                         <Label className="text-base">Email</Label>
                         <Input
                           type="email"
-                          placeholder="twoj@email.pl"
+                          placeholder="twój@email.pl"
                           value={loginForm.email}
                           onChange={(e) => setLoginForm({ ...loginForm, email: e.target.value })}
                           className="h-12 rounded-xl text-base"
@@ -1615,7 +1615,7 @@ export default function Page() {
                         />
                       </div>
                       <div>
-                        <Label className="text-base">Haslo</Label>
+                        <Label className="text-base">Hasło</Label>
                         <Input
                           type="password"
                           value={loginForm.password}
@@ -1625,7 +1625,7 @@ export default function Page() {
                         />
                       </div>
                       <Button type="submit" className="w-full h-12 rounded-xl text-base bg-orange-500 hover:bg-orange-600" disabled={isLoading}>
-                        {isLoading ? 'Logowanie...' : 'Zaloguj sie'}
+                        {isLoading ? 'Logowanie...' : 'Zaloguj się'}
                       </Button>
                     </form>
                   </TabsContent>
@@ -1633,10 +1633,10 @@ export default function Page() {
                   <TabsContent value="register" className="mt-0">
                     <form onSubmit={handleRegister} className="space-y-4">
                       <div>
-                        <Label className="text-base">Imie</Label>
+                        <Label className="text-base">Imię</Label>
                         <Input
                           type="text"
-                          placeholder="Jak sie nazywasz?"
+                          placeholder="Jak się nazywasz?"
                           value={registerForm.name}
                           onChange={(e) => setRegisterForm({ ...registerForm, name: e.target.value })}
                           className="h-12 rounded-xl text-base"
@@ -1647,7 +1647,7 @@ export default function Page() {
                         <Label className="text-base">Email</Label>
                         <Input
                           type="email"
-                          placeholder="twoj@email.pl"
+                          placeholder="twój@email.pl"
                           value={registerForm.email}
                           onChange={(e) => setRegisterForm({ ...registerForm, email: e.target.value })}
                           className="h-12 rounded-xl text-base"
@@ -1655,10 +1655,10 @@ export default function Page() {
                         />
                       </div>
                       <div>
-                        <Label className="text-base">Haslo</Label>
+                        <Label className="text-base">Hasło</Label>
                         <Input
                           type="password"
-                          placeholder="Min. 6 znakow"
+                          placeholder="Min. 6 znaków"
                           value={registerForm.password}
                           onChange={(e) => setRegisterForm({ ...registerForm, password: e.target.value })}
                           className="h-12 rounded-xl text-base"
@@ -1666,7 +1666,7 @@ export default function Page() {
                         />
                       </div>
                       <Button type="submit" className="w-full h-12 rounded-xl text-base bg-orange-500 hover:bg-orange-600" disabled={isLoading}>
-                        {isLoading ? 'Rejestracja...' : 'Utworz konto'}
+                        {isLoading ? 'Rejestracja...' : 'Utwórz konto'}
                       </Button>
                     </form>
                   </TabsContent>
@@ -1695,8 +1695,8 @@ export default function Page() {
               {view === 'categories' && selectedBackpack?.name}
               {view === 'items' && `${selectedBackpack?.name} - ${ITEM_CATEGORIES.find(c => c.value === selectedCategory)?.label}`}
               {view === 'deadlines' && 'Terminy'}
-              {view === 'shopping' && 'Lista zakupow'}
-              {view === 'info' && 'Wazne informacje'}
+              {view === 'shopping' && 'Lista zakupów'}
+              {view === 'info' && 'Ważne informacje'}
             </h1>
           </div>
           <div className="flex items-center gap-2">
@@ -1768,7 +1768,7 @@ export default function Page() {
                 <p className="font-medium truncate">
                   {isSyncing && 'Wysylanie zmian...'}
                   {!isSyncing && isOffline && pendingSyncCount > 0 && `${pendingSyncCount} zmian czeka na wyslanie`}
-                  {!isSyncing && isOffline && pendingSyncCount === 0 && 'Tryb offline - dane zapisuja sie lokalnie'}
+                  {!isSyncing && isOffline && pendingSyncCount === 0 && 'Tryb offline - dane zapisują się lokalnie'}
                   {!isSyncing && !isOffline && pendingSyncCount > 0 && `${pendingSyncCount} zmian czeka na synchronizacje`}
                 </p>
               </div>
@@ -1823,7 +1823,7 @@ export default function Page() {
                     <AlertTriangle className="h-4 w-4" />
                   </div>
                   <p className="text-2xl font-semibold text-neutral-950 dark:text-neutral-50">{expiringItems.length}</p>
-                  <p className="text-xs text-neutral-500 dark:text-neutral-400">Konczy sie</p>
+                  <p className="text-xs text-neutral-500 dark:text-neutral-400">Kończy się</p>
                 </CardContent>
               </Card>
               <Card
@@ -1855,8 +1855,8 @@ export default function Page() {
             {backpacks.length === 0 ? (
               <Card className="rounded-lg border-dashed p-8 text-center shadow-sm">
                 <BackpackIcon className="h-16 w-16 mx-auto text-gray-300 mb-4" />
-                <p className="text-gray-500">Nie masz jeszcze plecakow</p>
-                <p className="text-sm text-gray-400 mt-1">Otworz menu akcji i dodaj pierwszy plecak</p>
+                <p className="text-gray-500">Nie masz jeszcze plecaków</p>
+                <p className="text-sm text-gray-400 mt-1">Otwórz menu akcji i dodaj pierwszy plecak</p>
               </Card>
             ) : (
               <div className="grid grid-cols-2 gap-3">
@@ -1883,7 +1883,7 @@ export default function Page() {
                               <BackpackIcon className="h-5 w-5" style={{ color: backpack.color }} />
                             </div>
                             <p className="font-semibold text-base truncate">{backpack.name}</p>
-                            <p className="text-sm text-neutral-500 dark:text-neutral-400">{itemCount} przedmiotow</p>
+                            <p className="text-sm text-neutral-500 dark:text-neutral-400">{itemCount} przedmiotów</p>
                             <p className="mt-1 text-xs text-neutral-400">{audienceMeta.label}</p>
                           </div>
                           {isDeleting ? (
@@ -1981,7 +1981,7 @@ export default function Page() {
                       </div>
                       <CardContent className="p-3">
                         <p className="font-semibold text-base">{cat.label}</p>
-                        <p className="text-sm text-gray-500">{catItems.length} przedmiotow</p>
+                        <p className="text-sm text-gray-500">{catItems.length} przedmiotów</p>
                       </CardContent>
                     </Card>
                   );
@@ -2119,8 +2119,8 @@ export default function Page() {
             {shoppingList.length === 0 ? (
               <Card className="rounded-2xl p-8 text-center">
                 <ShoppingCart className="h-16 w-16 mx-auto text-gray-300 mb-4" />
-                <p className="text-gray-500">Lista zakupow jest pusta</p>
-                <p className="text-sm text-gray-400 mt-1">Produkty do wymiany dodadza sie automatycznie</p>
+                <p className="text-gray-500">Lista zakupów jest pusta</p>
+                <p className="text-sm text-gray-400 mt-1">Produkty do wymiany dodadzą się automatycznie</p>
               </Card>
             ) : (
               <div className="space-y-4">
@@ -2196,9 +2196,9 @@ export default function Page() {
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <p className="text-sm text-neutral-500 dark:text-neutral-400">Lokalne notatki awaryjne</p>
-                    <p className="text-lg font-semibold">Wazne informacje</p>
+                    <p className="text-lg font-semibold">Ważne informacje</p>
                     <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">
-                      Wlasne wpisy sa zapisane tylko na tym urzadzeniu.
+                      Własne wpisy są zapisane tylko na tym urządzeniu.
                     </p>
                   </div>
                   <Button
@@ -2240,8 +2240,8 @@ export default function Page() {
               {importantNotes.length === 0 ? (
                 <Card className="rounded-lg border-dashed p-6 text-center shadow-sm">
                   <FileText className="h-12 w-12 mx-auto text-gray-300 mb-3" />
-                  <p className="text-gray-500">Brak wlasnych informacji</p>
-                  <p className="text-sm text-gray-400 mt-1">Dodaj np. alergie, kontakty lub instrukcje dla domownikow</p>
+                  <p className="text-gray-500">Brak własnych informacji</p>
+                  <p className="text-sm text-gray-400 mt-1">Dodaj np. alergie, kontakty lub instrukcje dla domowników</p>
                 </Card>
               ) : (
                 importantNotes.map((note) => (
@@ -2274,7 +2274,7 @@ export default function Page() {
             {expiredItems.length === 0 && expiringItems.length === 0 ? (
               <Card className="rounded-2xl p-8 text-center">
                 <Check className="h-16 w-16 mx-auto text-green-500 mb-4" />
-                <p className="text-gray-500">Brak rzeczy wymagajacych kontroli terminu</p>
+                <p className="text-gray-500">Brak rzeczy wymagających kontroli terminu</p>
               </Card>
             ) : (
               <>
@@ -2302,7 +2302,7 @@ export default function Page() {
                                 {backpack?.name} - {getItemQuantityLabel(item)}
                               </p>
                               <p className="text-sm text-red-600 font-medium mt-1">
-                                Wygaslo: {expiryDate ? new Date(expiryDate).toLocaleDateString('pl-PL') : ''}
+                                Wygasło: {expiryDate ? new Date(expiryDate).toLocaleDateString('pl-PL') : ''}
                               </p>
                             </div>
                             <Button
@@ -2322,14 +2322,14 @@ export default function Page() {
 
                 <section className="space-y-2">
                   <div className="flex items-center justify-between px-1">
-                    <h2 className="font-semibold text-amber-700 dark:text-amber-300">Koncza sie w ciagu 7 dni</h2>
+                    <h2 className="font-semibold text-amber-700 dark:text-amber-300">Kończą się w ciągu 7 dni</h2>
                     <Badge variant="outline" className="border-amber-300 bg-amber-50 text-amber-700 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-200">
                       {expiringItems.length}
                     </Badge>
                   </div>
                   {expiringItems.length === 0 ? (
                     <Card className="rounded-xl border-dashed p-4 text-sm text-neutral-500">
-                      Brak rzeczy konczacych sie w ciagu 7 dni
+                      Brak rzeczy kończących się w ciągu 7 dni
                     </Card>
                   ) : (
                     expiringItems.map((item) => {
@@ -2439,7 +2439,7 @@ export default function Page() {
             <div>
               <Label className="text-base">Opis</Label>
               <Textarea
-                placeholder="Opis zawartosci..."
+                placeholder="Opis zawartości..."
                 value={newBackpack.description}
                 onChange={(e) => setNewBackpack({ ...newBackpack, description: e.target.value })}
                 className="rounded-xl"
@@ -2493,17 +2493,17 @@ export default function Page() {
               />
               <div className="space-y-1">
                 <Label htmlFor="starter-checklist" className="text-base font-medium">
-                  Dodaj checkliste 72h
+                  Dodaj checklistę 72h
                 </Label>
                 <p className="text-sm text-neutral-500 dark:text-neutral-400">
-                  Utworzy bazowa liste 72h dla wybranego profilu i doda ja do zakupow do odhaczenia.
+                  Utworzy bazową listę 72h dla wybranego profilu i doda ją do zakupów do odhaczenia.
                 </p>
               </div>
             </div>
           </div>
           <DialogFooter>
             <Button onClick={handleCreateBackpack} className="w-full h-12 rounded-xl bg-orange-500 hover:bg-orange-600">
-              Utworz plecak
+              Utwórz plecak
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -2533,7 +2533,7 @@ export default function Page() {
               disabled={scanning}
             >
               {scanning ? <RefreshCw className="h-5 w-5 mr-2 animate-spin" /> : <Camera className="h-5 w-5 mr-2" />}
-              {scanning ? 'Skanowanie...' : 'Zeskanuj kod/date'}
+              {scanning ? 'Skanowanie...' : 'Zeskanuj kod/datę'}
             </Button>
 
             {scanResult && (
@@ -2559,7 +2559,7 @@ export default function Page() {
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <Label className="text-base">Ilosc</Label>
+                <Label className="text-base">Ilość</Label>
                 <Input
                   type="number"
                   min="1"
@@ -2593,7 +2593,7 @@ export default function Page() {
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <Label className="text-base">Data waznosci</Label>
+                <Label className="text-base">Data ważności</Label>
                 <Input
                   type="date"
                   value={newItem.expiryDate ? new Date(newItem.expiryDate).toISOString().split('T')[0] : ''}
@@ -2696,7 +2696,7 @@ export default function Page() {
                 </Select>
               </div>
               <div>
-                <Label className="text-base">Data waznosci</Label>
+                <Label className="text-base">Data ważności</Label>
                 <Input
                   type="date"
                   value={formatDateInputValue(editItemForm.expiryDate)}
@@ -2709,9 +2709,9 @@ export default function Page() {
             <div className="space-y-3 rounded-xl border border-neutral-200 bg-neutral-50 p-3 dark:border-neutral-800 dark:bg-neutral-900">
               <div className="flex items-center justify-between gap-3">
                 <div>
-                  <Label className="text-base font-medium">Partie / daty waznosci</Label>
+                  <Label className="text-base font-medium">Partie / daty ważności</Label>
                   <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                    Dla kilku takich samych rzeczy z roznymi terminami.
+                    Dla kilku takich samych rzeczy z różnymi terminami.
                   </p>
                 </div>
                 <Button type="button" variant="outline" size="sm" className="shrink-0 rounded-lg" onClick={addEditItemBatch}>
@@ -2722,7 +2722,7 @@ export default function Page() {
 
               {(editItemForm.batches || []).length === 0 ? (
                 <p className="rounded-lg border border-dashed border-neutral-300 p-3 text-sm text-neutral-500 dark:border-neutral-700 dark:text-neutral-400">
-                  Brak partii. Uzywana jest pojedyncza data waznosci powyzej.
+                  Brak partii. Używana jest pojedyncza data ważności powyżej.
                 </p>
               ) : (
                 <div className="space-y-3">
@@ -2742,7 +2742,7 @@ export default function Page() {
                       </div>
                       <div className="grid grid-cols-2 gap-3">
                         <div>
-                          <Label className="text-sm">Ilosc</Label>
+                          <Label className="text-sm">Ilość</Label>
                           <Input
                             type="number"
                             min="1"
@@ -2821,7 +2821,7 @@ export default function Page() {
                 }}
               >
                 <Trash2 className="h-5 w-5 mr-2" />
-                Usun przedmiot
+                Usuń przedmiot
               </Button>
             )}
           </div>
@@ -2833,7 +2833,7 @@ export default function Page() {
           <SheetHeader>
             <SheetTitle className="text-xl flex items-center gap-2">
               <ShoppingCart className="h-5 w-5" />
-              Dodaj do zakupow
+              Dodaj do zakupów
             </SheetTitle>
           </SheetHeader>
           <div className="space-y-4 mt-4">
@@ -2849,7 +2849,7 @@ export default function Page() {
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <Label className="text-base">Ilosc</Label>
+                <Label className="text-base">Ilość</Label>
                 <Input
                   type="number"
                   min="1"
@@ -2899,12 +2899,12 @@ export default function Page() {
           <SheetHeader>
             <SheetTitle className="text-xl flex items-center gap-2">
               <FileText className="h-5 w-5" />
-              Dodaj wazna informacje
+              Dodaj ważną informację
             </SheetTitle>
           </SheetHeader>
           <div className="space-y-4 mt-4">
             <div>
-              <Label className="text-base">Tytul *</Label>
+              <Label className="text-base">Tytuł *</Label>
               <Input
                 placeholder="np. Alergie, kontakt awaryjny"
                 value={newImportantNote.title}
@@ -2913,9 +2913,9 @@ export default function Page() {
               />
             </div>
             <div>
-              <Label className="text-base">Tresc *</Label>
+              <Label className="text-base">Treść *</Label>
               <Textarea
-                placeholder="Wpisz informacje, ktore maja byc dostepne w sytuacji awaryjnej..."
+                placeholder="Wpisz informacje, które mają być dostępne w sytuacji awaryjnej..."
                 value={newImportantNote.content}
                 onChange={(e) => setNewImportantNote({ ...newImportantNote, content: e.target.value })}
                 className="min-h-32 rounded-xl"
@@ -2942,9 +2942,9 @@ export default function Page() {
       >
         <AlertDialogContent className="rounded-2xl">
           <AlertDialogHeader>
-            <AlertDialogTitle>Usunac te informacje?</AlertDialogTitle>
+            <AlertDialogTitle>Usunąć te informacje?</AlertDialogTitle>
             <AlertDialogDescription>
-              Tej operacji nie da sie cofnac. Informacja zostanie usunieta z listy Moje informacje.
+              Tej operacji nie da się cofnąć. Informacja zostanie usunięta z listy Moje informacje.
             </AlertDialogDescription>
           </AlertDialogHeader>
           {importantNotePendingDelete?.title && (
@@ -2962,7 +2962,7 @@ export default function Page() {
                 if (noteId) void removeImportantNote(noteId);
               }}
             >
-              Usun
+              Usuń
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

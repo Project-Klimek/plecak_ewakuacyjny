@@ -28,14 +28,14 @@ export async function POST(request: NextRequest) {
 
     if (image.length > MAX_IMAGE_LENGTH) {
       return NextResponse.json(
-        { success: false, error: 'Obraz jest za duzy do analizy' },
+        { success: false, error: 'Obraz jest za duży do analizy' },
         { status: 413 }
       );
     }
 
     if (image.startsWith('data:') && !image.startsWith('data:image/')) {
       return NextResponse.json(
-        { success: false, error: 'Nieprawidlowy format obrazu' },
+        { success: false, error: 'Nieprawidłowy format obrazu' },
         { status: 400 }
       );
     }
