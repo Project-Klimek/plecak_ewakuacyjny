@@ -92,7 +92,7 @@ const backpackAudiences: { value: BackpackAudience; label: string; description: 
   { value: 'dependent', label: 'Opieka', description: 'Osoba pod opieka', icon: <Heart className="h-4 w-4" /> },
 ];
 
-type ViewState = 'backpacks' | 'categories' | 'items' | 'expiring' | 'expired' | 'shopping' | 'info';
+type ViewState = 'backpacks' | 'categories' | 'items' | 'deadlines' | 'shopping' | 'info';
 
 interface ShoppingItem {
   id: string;
@@ -1551,7 +1551,7 @@ export default function Page() {
     if (view === 'items') {
       setSelectedCategory(null);
       setView('categories');
-    } else if (view === 'categories' || view === 'expiring' || view === 'expired' || view === 'shopping' || view === 'info') {
+    } else if (view === 'categories' || view === 'deadlines' || view === 'shopping' || view === 'info') {
       setSelectedBackpackId(null);
       setView('backpacks');
     }
@@ -1683,8 +1683,7 @@ export default function Page() {
               {view === 'backpacks' && 'Moje plecaki'}
               {view === 'categories' && selectedBackpack?.name}
               {view === 'items' && `${selectedBackpack?.name} - ${ITEM_CATEGORIES.find(c => c.value === selectedCategory)?.label}`}
-              {view === 'expiring' && 'Konczace sie'}
-              {view === 'expired' && 'Przeterminowane'}
+              {view === 'deadlines' && 'Terminy'}
               {view === 'shopping' && 'Lista zakupow'}
               {view === 'info' && 'Wazne informacje'}
             </h1>
@@ -1806,7 +1805,7 @@ export default function Page() {
             <div className="grid grid-cols-3 gap-3">
               <Card
                 className="rounded-lg border-amber-200 bg-white shadow-sm cursor-pointer active:scale-[0.98] transition-transform dark:border-amber-900/60 dark:bg-neutral-900"
-                onClick={() => setView('expiring')}
+                onClick={() => setView('deadlines')}
               >
                 <CardContent className="p-3">
                   <div className="mb-3 flex h-8 w-8 items-center justify-center rounded-md bg-amber-100 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300">
@@ -1818,7 +1817,7 @@ export default function Page() {
               </Card>
               <Card
                 className="rounded-lg border-red-200 bg-white shadow-sm cursor-pointer active:scale-[0.98] transition-transform dark:border-red-900/60 dark:bg-neutral-900"
-                onClick={() => setView('expired')}
+                onClick={() => setView('deadlines')}
               >
                 <CardContent className="p-3">
                   <div className="mb-3 flex h-8 w-8 items-center justify-center rounded-md bg-red-100 text-red-700 dark:bg-red-950/60 dark:text-red-300">
@@ -2259,98 +2258,117 @@ export default function Page() {
           </div>
         )}
 
-        {view === 'expiring' && (
-          <div className="space-y-2">
-            {expiringItems.length === 0 ? (
+        {view === 'deadlines' && (
+          <div className="space-y-5">
+            {expiredItems.length === 0 && expiringItems.length === 0 ? (
               <Card className="rounded-2xl p-8 text-center">
                 <Check className="h-16 w-16 mx-auto text-green-500 mb-4" />
-                <p className="text-gray-500">Zaden przedmiot nie konczy sie w ciagu 7 dni</p>
+                <p className="text-gray-500">Brak rzeczy wymagajacych kontroli terminu</p>
               </Card>
             ) : (
-              expiringItems.map((item) => {
-                const backpack = backpacks.find(b => b.id === item.backpackId);
-                const expiryDate = getItemEffectiveExpiryDate(item);
-                return (
-                  <Card key={item.id} className="rounded-xl border-amber-400 bg-amber-50 dark:bg-amber-900/20">
-                    <div className="flex items-center p-3">
-                      <div className="flex-1">
-                        <p className="font-medium">{item.name}</p>
-                        <p className="text-sm text-gray-500">
-                          {backpack?.name} - {getItemQuantityLabel(item)}
-                        </p>
-                        <p className="text-sm text-amber-600 font-medium mt-1">
-                          {expiryDate ? new Date(expiryDate).toLocaleDateString('pl-PL') : ''}
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Button
-                          variant="outline"
-                          size="icon"
-                          className="h-8 w-8 rounded-lg"
-                          onClick={() => handleUpdateItemQuantity(item, -1)}
-                        >
-                          <Minus className="h-4 w-4" />
-                        </Button>
-                        <span className="w-14 text-center font-semibold">{getItemQuantityLabel(item)}</span>
-                        <Button
-                          variant="outline"
-                          size="icon"
-                          className="h-8 w-8 rounded-lg"
-                          onClick={() => handleUpdateItemQuantity(item, 1)}
-                        >
-                          <Plus className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  </Card>
-                );
-              })
-            )}
-          </div>
-        )}
+              <>
+                <section className="space-y-2">
+                  <div className="flex items-center justify-between px-1">
+                    <h2 className="font-semibold text-red-700 dark:text-red-300">Po terminie</h2>
+                    <Badge variant="outline" className="border-red-300 bg-red-50 text-red-700 dark:border-red-800 dark:bg-red-950/30 dark:text-red-200">
+                      {expiredItems.length}
+                    </Badge>
+                  </div>
+                  {expiredItems.length === 0 ? (
+                    <Card className="rounded-xl border-dashed p-4 text-sm text-neutral-500">
+                      Brak przeterminowanych rzeczy
+                    </Card>
+                  ) : (
+                    expiredItems.map((item) => {
+                      const backpack = backpacks.find(b => b.id === item.backpackId);
+                      const expiryDate = getItemEffectiveExpiryDate(item);
+                      return (
+                        <Card key={item.id} className="rounded-xl border-red-400 bg-red-50 dark:bg-red-900/20">
+                          <div className="flex items-center p-3">
+                            <div className="flex-1">
+                              <p className="font-medium">{item.name}</p>
+                              <p className="text-sm text-gray-500">
+                                {backpack?.name} - {getItemQuantityLabel(item)}
+                              </p>
+                              <p className="text-sm text-red-600 font-medium mt-1">
+                                Wygaslo: {expiryDate ? new Date(expiryDate).toLocaleDateString('pl-PL') : ''}
+                              </p>
+                            </div>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleDeleteItem(item.id)}
+                              className="text-red-500"
+                            >
+                              <Trash2 className="h-5 w-5" />
+                            </Button>
+                          </div>
+                        </Card>
+                      );
+                    })
+                  )}
+                </section>
 
-        {view === 'expired' && (
-          <div className="space-y-2">
-            {expiredItems.length === 0 ? (
-              <Card className="rounded-2xl p-8 text-center">
-                <Check className="h-16 w-16 mx-auto text-green-500 mb-4" />
-                <p className="text-gray-500">Brak przeterminowanych przedmiotow</p>
-              </Card>
-            ) : (
-              expiredItems.map((item) => {
-                const backpack = backpacks.find(b => b.id === item.backpackId);
-                const expiryDate = getItemEffectiveExpiryDate(item);
-                return (
-                  <Card key={item.id} className="rounded-xl border-red-400 bg-red-50 dark:bg-red-900/20">
-                    <div className="flex items-center p-3">
-                      <div className="flex-1">
-                        <p className="font-medium">{item.name}</p>
-                        <p className="text-sm text-gray-500">
-                          {backpack?.name} - {getItemQuantityLabel(item)}
-                        </p>
-                        <p className="text-sm text-red-600 font-medium mt-1">
-                          Wygaslo: {expiryDate ? new Date(expiryDate).toLocaleDateString('pl-PL') : ''}
-                        </p>
-                      </div>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleDeleteItem(item.id)}
-                        className="text-red-500"
-                      >
-                        <Trash2 className="h-5 w-5" />
-                      </Button>
-                    </div>
-                  </Card>
-                );
-              })
+                <section className="space-y-2">
+                  <div className="flex items-center justify-between px-1">
+                    <h2 className="font-semibold text-amber-700 dark:text-amber-300">Koncza sie w ciagu 7 dni</h2>
+                    <Badge variant="outline" className="border-amber-300 bg-amber-50 text-amber-700 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-200">
+                      {expiringItems.length}
+                    </Badge>
+                  </div>
+                  {expiringItems.length === 0 ? (
+                    <Card className="rounded-xl border-dashed p-4 text-sm text-neutral-500">
+                      Brak rzeczy konczacych sie w ciagu 7 dni
+                    </Card>
+                  ) : (
+                    expiringItems.map((item) => {
+                      const backpack = backpacks.find(b => b.id === item.backpackId);
+                      const expiryDate = getItemEffectiveExpiryDate(item);
+                      return (
+                        <Card key={item.id} className="rounded-xl border-amber-400 bg-amber-50 dark:bg-amber-900/20">
+                          <div className="flex items-center p-3">
+                            <div className="flex-1">
+                              <p className="font-medium">{item.name}</p>
+                              <p className="text-sm text-gray-500">
+                                {backpack?.name} - {getItemQuantityLabel(item)}
+                              </p>
+                              <p className="text-sm text-amber-600 font-medium mt-1">
+                                {expiryDate ? new Date(expiryDate).toLocaleDateString('pl-PL') : ''}
+                              </p>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Button
+                                variant="outline"
+                                size="icon"
+                                className="h-8 w-8 rounded-lg"
+                                onClick={() => handleUpdateItemQuantity(item, -1)}
+                              >
+                                <Minus className="h-4 w-4" />
+                              </Button>
+                              <span className="w-14 text-center font-semibold">{getItemQuantityLabel(item)}</span>
+                              <Button
+                                variant="outline"
+                                size="icon"
+                                className="h-8 w-8 rounded-lg"
+                                onClick={() => handleUpdateItemQuantity(item, 1)}
+                              >
+                                <Plus className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </div>
+                        </Card>
+                      );
+                    })
+                  )}
+                </section>
+              </>
             )}
           </div>
         )}
       </main>
 
       <nav className="app-bottom-nav fixed left-3 right-3 z-50 rounded-lg border border-neutral-200 bg-white/95 p-1 shadow-lg backdrop-blur dark:border-neutral-800 dark:bg-neutral-900/95">
-        <div className="grid grid-cols-5 h-14 gap-1">
+        <div className="grid grid-cols-4 h-14 gap-1">
           <button
             className={`flex flex-col items-center justify-center rounded-md ${view === 'backpacks' ? 'bg-neutral-100 text-neutral-950 dark:bg-neutral-800 dark:text-white' : 'text-neutral-500'}`}
             onClick={() => { setView('backpacks'); setSelectedBackpackId(null); }}
@@ -2371,16 +2389,16 @@ export default function Page() {
             <span className="text-xs mt-1">Zakupy</span>
           </button>
           <button
-            className={`flex flex-col items-center justify-center rounded-md relative ${view === 'expiring' ? 'bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300' : 'text-neutral-500'}`}
-            onClick={() => setView('expiring')}
+            className={`flex flex-col items-center justify-center rounded-md relative ${view === 'deadlines' ? 'bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300' : 'text-neutral-500'}`}
+            onClick={() => setView('deadlines')}
           >
             <AlertTriangle className="h-5 w-5" />
-            {expiringItems.length > 0 && (
-              <span className="absolute top-0 right-1/4 min-w-4 h-4 px-1 bg-amber-500 text-white text-[10px] rounded-full flex items-center justify-center">
-                {expiringItems.length}
+            {expiredItems.length + expiringItems.length > 0 && (
+              <span className={`absolute top-0 right-1/4 min-w-4 h-4 px-1 text-white text-[10px] rounded-full flex items-center justify-center ${expiredItems.length > 0 ? 'bg-red-500' : 'bg-amber-500'}`}>
+                {expiredItems.length + expiringItems.length}
               </span>
             )}
-            <span className="text-[10px] mt-1">Koncza</span>
+            <span className="text-xs mt-1">Terminy</span>
           </button>
           <button
             className={`flex flex-col items-center justify-center rounded-md ${view === 'info' ? 'bg-neutral-100 text-neutral-950 dark:bg-neutral-800 dark:text-white' : 'text-neutral-500'}`}
@@ -2388,18 +2406,6 @@ export default function Page() {
           >
             <FileText className="h-5 w-5" />
             <span className="text-xs mt-1">Info</span>
-          </button>
-          <button
-            className={`flex flex-col items-center justify-center rounded-md relative ${view === 'expired' ? 'bg-red-50 text-red-700 dark:bg-red-950/40 dark:text-red-300' : 'text-neutral-500'}`}
-            onClick={() => setView('expired')}
-          >
-            <Trash2 className="h-5 w-5" />
-            {expiredItems.length > 0 && (
-              <span className="absolute top-0 right-1/4 min-w-4 h-4 px-1 bg-red-500 text-white text-[10px] rounded-full flex items-center justify-center">
-                {expiredItems.length}
-              </span>
-            )}
-            <span className="text-[10px] mt-1">Po terminie</span>
           </button>
         </div>
       </nav>
