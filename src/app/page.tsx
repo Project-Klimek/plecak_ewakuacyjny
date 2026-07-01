@@ -26,6 +26,16 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
@@ -280,6 +290,7 @@ export default function Page() {
   const [infoStorageLoaded, setInfoStorageLoaded] = useState(false);
   const [showAddImportantNote, setShowAddImportantNote] = useState(false);
   const [newImportantNote, setNewImportantNote] = useState({ title: '', content: '' });
+  const [importantNotePendingDelete, setImportantNotePendingDelete] = useState<ImportantNote | null>(null);
   const [pendingSyncCount, setPendingSyncCount] = useState(0);
   const [isSyncing, setIsSyncing] = useState(false);
 
@@ -2245,7 +2256,7 @@ export default function Page() {
                           variant="ghost"
                           size="icon"
                           className="h-8 w-8 shrink-0 text-neutral-400 hover:text-red-500"
-                          onClick={() => removeImportantNote(note.id)}
+                          onClick={() => setImportantNotePendingDelete(note)}
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
@@ -2922,6 +2933,40 @@ export default function Page() {
           </div>
         </SheetContent>
       </Sheet>
+
+      <AlertDialog
+        open={importantNotePendingDelete !== null}
+        onOpenChange={(open) => {
+          if (!open) setImportantNotePendingDelete(null);
+        }}
+      >
+        <AlertDialogContent className="rounded-2xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Usunac te informacje?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tej operacji nie da sie cofnac. Informacja zostanie usunieta z listy Moje informacje.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          {importantNotePendingDelete?.title && (
+            <div className="rounded-lg border border-neutral-200 bg-neutral-50 p-3 text-sm font-medium text-neutral-700 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-200">
+              {importantNotePendingDelete.title}
+            </div>
+          )}
+          <AlertDialogFooter>
+            <AlertDialogCancel>Anuluj</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-red-600 text-white hover:bg-red-700"
+              onClick={() => {
+                const noteId = importantNotePendingDelete?.id;
+                setImportantNotePendingDelete(null);
+                if (noteId) void removeImportantNote(noteId);
+              }}
+            >
+              Usun
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <Toaster />
     </div>
