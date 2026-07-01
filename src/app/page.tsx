@@ -1683,14 +1683,14 @@ export default function Page() {
   return (
     <div className="app-scroll-root bg-neutral-100 text-neutral-950 dark:bg-neutral-950 dark:text-neutral-50">
       <header className="sticky top-0 z-40 border-b border-neutral-200 bg-white/95 backdrop-blur dark:border-neutral-800 dark:bg-neutral-950/95">
-        <div className="flex items-center justify-between px-4 py-3">
-          <div className="flex items-center">
+        <div className="app-page-shell flex items-center justify-between gap-2 py-3">
+          <div className="flex min-w-0 flex-1 items-center">
             {view !== 'backpacks' && (
               <Button variant="ghost" size="icon" onClick={goBack} className="mr-2">
                 <ChevronRight className="h-6 w-6 rotate-180" />
               </Button>
             )}
-            <h1 className="text-lg font-semibold tracking-normal truncate">
+            <h1 className="min-w-0 truncate text-lg font-semibold tracking-normal">
               {view === 'backpacks' && 'Moje plecaki'}
               {view === 'categories' && selectedBackpack?.name}
               {view === 'items' && `${selectedBackpack?.name} - ${ITEM_CATEGORIES.find(c => c.value === selectedCategory)?.label}`}
@@ -1699,7 +1699,7 @@ export default function Page() {
               {view === 'info' && 'Ważne informacje'}
             </h1>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex shrink-0 items-center gap-1.5">
             {isOffline && (
               <Badge variant="outline" className="border-amber-500/40 bg-amber-50 text-amber-700 text-xs dark:bg-amber-950/30 dark:text-amber-200">
                 Offline
@@ -1750,7 +1750,7 @@ export default function Page() {
         </div>
         
         {showSearch && (
-          <div className="px-4 pb-3">
+          <div className="app-page-shell pb-3">
             <Input
               placeholder="Szukaj..."
               value={searchQuery}
@@ -1761,7 +1761,7 @@ export default function Page() {
         )}
 
         {(isOffline || pendingSyncCount > 0 || isSyncing) && (
-          <div className="px-4 pb-3">
+          <div className="app-page-shell pb-3">
             <div className="flex items-center gap-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-900/30 dark:text-amber-100">
               <RefreshCw className={`h-4 w-4 shrink-0 ${isSyncing ? 'animate-spin' : ''}`} />
               <div className="flex-1 min-w-0">
@@ -1788,13 +1788,13 @@ export default function Page() {
         )}
       </header>
 
-      <main className="app-main-scroll px-4 py-4">
+      <main className="app-main-scroll app-page-shell py-4">
         {view === 'backpacks' && (
           <div className="space-y-4">
             <Card className="rounded-lg border-neutral-200 bg-white shadow-sm dark:border-neutral-800 dark:bg-neutral-900">
               <CardContent className="p-4">
                 <div className="flex items-center justify-between gap-3">
-                  <div>
+                    <div className="min-w-0">
                     <p className="text-sm text-neutral-500 dark:text-neutral-400">Status operacyjny</p>
                     <p className="text-xl font-semibold">
                       {totalIssueCount > 0 ? `${totalIssueCount} spraw do kontroli` : 'Wszystko pod kontrola'}
@@ -1813,7 +1813,7 @@ export default function Page() {
               </CardContent>
             </Card>
 
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-3 gap-2 min-[380px]:gap-3">
               <Card
                 className="rounded-lg border-amber-200 bg-white shadow-sm cursor-pointer active:scale-[0.98] transition-transform dark:border-amber-900/60 dark:bg-neutral-900"
                 onClick={() => setView('deadlines')}
@@ -1853,13 +1853,13 @@ export default function Page() {
             </div>
 
             {backpacks.length === 0 ? (
-              <Card className="rounded-lg border-dashed p-8 text-center shadow-sm">
+              <Card className="rounded-lg border-dashed p-6 text-center shadow-sm min-[380px]:p-8">
                 <BackpackIcon className="h-16 w-16 mx-auto text-gray-300 mb-4" />
                 <p className="text-gray-500">Nie masz jeszcze plecaków</p>
                 <p className="text-sm text-gray-400 mt-1">Otwórz menu akcji i dodaj pierwszy plecak</p>
               </Card>
             ) : (
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 gap-3 min-[380px]:grid-cols-2">
                 {backpacks.map((backpack) => {
                   const itemCount = items.filter(i => i.backpackId === backpack.id).length;
                   const backpackExpiredCount = expiredItems.filter(i => i.backpackId === backpack.id).length;
@@ -1959,13 +1959,13 @@ export default function Page() {
             </Button>
 
             {Object.keys(itemsByCategory).length === 0 ? (
-              <Card className="rounded-2xl p-8 text-center">
+              <Card className="rounded-2xl p-6 text-center min-[380px]:p-8">
                 <Package className="h-16 w-16 mx-auto text-gray-300 mb-4" />
                 <p className="text-gray-500">Plecak jest pusty</p>
                 <p className="text-sm text-gray-400 mt-1">Dodaj pierwszy przedmiot</p>
               </Card>
             ) : (
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 gap-3 min-[380px]:grid-cols-2">
                 {ITEM_CATEGORIES.map((cat) => {
                   const catItems = itemsByCategory[cat.value] || [];
                   if (catItems.length === 0) return null;
@@ -1980,7 +1980,7 @@ export default function Page() {
                         {categoryIcons[cat.value]}
                       </div>
                       <CardContent className="p-3">
-                        <p className="font-semibold text-base">{cat.label}</p>
+                        <p className="truncate text-base font-semibold">{cat.label}</p>
                         <p className="text-sm text-gray-500">{catItems.length} przedmiotów</p>
                       </CardContent>
                     </Card>
@@ -2020,10 +2020,10 @@ export default function Page() {
                   className={`cursor-pointer rounded-xl ${isExpiring ? 'border-amber-400 bg-amber-50 dark:bg-amber-900/20' : ''} ${isExpired ? 'border-red-400 bg-red-50 dark:bg-red-900/20' : ''}`}
                   onClick={() => openEditItem(item)}
                 >
-                  <div className="flex items-center p-3">
-                    <div className="flex-1">
+                  <div className="flex items-center gap-2 p-3">
+                    <div className="min-w-0 flex-1">
                       <p className="font-medium">{item.name}</p>
-                      <div className="flex items-center gap-2 text-sm text-gray-500 mt-1">
+                      <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-gray-500">
                         {expiryLabel && (
                           <span className={isExpiring ? 'text-amber-600 font-medium' : isExpired ? 'text-red-600 font-medium' : ''}>
                             {expiryLabel}
@@ -2042,7 +2042,7 @@ export default function Page() {
                       </div>
                     </div>
                     
-                    <div className="flex items-center gap-2">
+                    <div className="flex shrink-0 items-center gap-1.5 min-[380px]:gap-2">
                       <Button
                         variant="outline"
                         size="icon"
@@ -2117,7 +2117,7 @@ export default function Page() {
             </Card>
 
             {shoppingList.length === 0 ? (
-              <Card className="rounded-2xl p-8 text-center">
+              <Card className="rounded-2xl p-6 text-center min-[380px]:p-8">
                 <ShoppingCart className="h-16 w-16 mx-auto text-gray-300 mb-4" />
                 <p className="text-gray-500">Lista zakupów jest pusta</p>
                 <p className="text-sm text-gray-400 mt-1">Produkty do wymiany dodadzą się automatycznie</p>
@@ -2272,7 +2272,7 @@ export default function Page() {
         {view === 'deadlines' && (
           <div className="space-y-5">
             {expiredItems.length === 0 && expiringItems.length === 0 ? (
-              <Card className="rounded-2xl p-8 text-center">
+              <Card className="rounded-2xl p-6 text-center min-[380px]:p-8">
                 <Check className="h-16 w-16 mx-auto text-green-500 mb-4" />
                 <p className="text-gray-500">Brak rzeczy wymagających kontroli terminu</p>
               </Card>
@@ -2295,8 +2295,8 @@ export default function Page() {
                       const expiryDate = getItemEffectiveExpiryDate(item);
                       return (
                         <Card key={item.id} className="rounded-xl border-red-400 bg-red-50 dark:bg-red-900/20">
-                          <div className="flex items-center p-3">
-                            <div className="flex-1">
+                          <div className="flex items-center gap-2 p-3">
+                            <div className="min-w-0 flex-1">
                               <p className="font-medium">{item.name}</p>
                               <p className="text-sm text-gray-500">
                                 {backpack?.name} - {getItemQuantityLabel(item)}
@@ -2337,8 +2337,8 @@ export default function Page() {
                       const expiryDate = getItemEffectiveExpiryDate(item);
                       return (
                         <Card key={item.id} className="rounded-xl border-amber-400 bg-amber-50 dark:bg-amber-900/20">
-                          <div className="flex items-center p-3">
-                            <div className="flex-1">
+                          <div className="flex items-center gap-2 p-3">
+                            <div className="min-w-0 flex-1">
                               <p className="font-medium">{item.name}</p>
                               <p className="text-sm text-gray-500">
                                 {backpack?.name} - {getItemQuantityLabel(item)}
@@ -2347,7 +2347,7 @@ export default function Page() {
                                 {expiryDate ? new Date(expiryDate).toLocaleDateString('pl-PL') : ''}
                               </p>
                             </div>
-                            <div className="flex items-center gap-2">
+                            <div className="flex shrink-0 items-center gap-1.5 min-[380px]:gap-2">
                               <Button
                                 variant="outline"
                                 size="icon"
@@ -2356,7 +2356,7 @@ export default function Page() {
                               >
                                 <Minus className="h-4 w-4" />
                               </Button>
-                              <span className="w-14 text-center font-semibold">{getItemQuantityLabel(item)}</span>
+                              <span className="w-12 text-center font-semibold min-[380px]:w-14">{getItemQuantityLabel(item)}</span>
                               <Button
                                 variant="outline"
                                 size="icon"
@@ -2378,7 +2378,7 @@ export default function Page() {
         )}
       </main>
 
-      <nav className="app-bottom-nav fixed left-3 right-3 z-50 rounded-lg border border-neutral-200 bg-white/95 p-1 shadow-lg backdrop-blur dark:border-neutral-800 dark:bg-neutral-900/95">
+      <nav className="app-bottom-nav fixed z-50 rounded-lg border border-neutral-200 bg-white/95 p-1 shadow-lg backdrop-blur dark:border-neutral-800 dark:bg-neutral-900/95">
         <div className="grid grid-cols-4 h-14 gap-1">
           <button
             className={`flex flex-col items-center justify-center rounded-md ${view === 'backpacks' ? 'bg-neutral-100 text-neutral-950 dark:bg-neutral-800 dark:text-white' : 'text-neutral-500'}`}
@@ -2447,7 +2447,7 @@ export default function Page() {
             </div>
             <div>
               <Label className="text-base">Dla kogo?</Label>
-              <div className="grid grid-cols-2 gap-2 mt-2">
+              <div className="mt-2 grid grid-cols-1 gap-2 min-[380px]:grid-cols-2">
                 {backpackAudiences.map((audience) => (
                   <button
                     key={audience.value}
@@ -2557,7 +2557,7 @@ export default function Page() {
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3 min-[380px]:grid-cols-2">
               <div>
                 <Label className="text-base">Ilość</Label>
                 <Input
@@ -2591,7 +2591,7 @@ export default function Page() {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3 min-[380px]:grid-cols-2">
               <div>
                 <Label className="text-base">Data ważności</Label>
                 <Input
@@ -2646,7 +2646,7 @@ export default function Page() {
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3 min-[380px]:grid-cols-2">
               <div>
                 <Label className="text-base">Mam</Label>
                 <Input
@@ -2673,7 +2673,7 @@ export default function Page() {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3 min-[380px]:grid-cols-2">
               <div>
                 <Label className="text-base">Kategoria</Label>
                 <Select
@@ -2740,7 +2740,7 @@ export default function Page() {
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
-                      <div className="grid grid-cols-2 gap-3">
+                      <div className="grid grid-cols-1 gap-3 min-[380px]:grid-cols-2">
                         <div>
                           <Label className="text-sm">Ilość</Label>
                           <Input
@@ -2847,7 +2847,7 @@ export default function Page() {
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3 min-[380px]:grid-cols-2">
               <div>
                 <Label className="text-base">Ilość</Label>
                 <Input

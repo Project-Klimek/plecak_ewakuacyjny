@@ -129,6 +129,12 @@
 }
 
 @layer utilities {
+  .app-page-shell {
+    width: min(100%, 46rem);
+    margin-inline: auto;
+    padding-inline: clamp(1rem, 4vw, 1.5rem);
+  }
+
   .app-scroll-root {
     min-height: 100dvh;
     overflow-x: hidden;
@@ -141,6 +147,9 @@
 
   .app-bottom-nav {
     bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px));
+    left: 50%;
+    width: min(calc(100vw - 2rem), 42rem);
+    transform: translateX(-50%);
   }
 
   .app-modal-scroll {
@@ -154,5 +163,15 @@
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
     padding-bottom: max(1rem, env(safe-area-inset-bottom, 0px));
+  }
+
+  @media (max-width: 360px) {
+    .app-page-shell {
+      padding-inline: 0.875rem;
+    }
+
+    .app-bottom-nav {
+      width: calc(100vw - 1.25rem);
+    }
   }
 }
